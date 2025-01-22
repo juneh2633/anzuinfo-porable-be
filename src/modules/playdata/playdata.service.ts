@@ -14,6 +14,7 @@ import { PlaydataWithChartEntity } from './entity/PlaydataWithChart.entity';
 import { PlaydataEntity } from './entity/Playdata.entity';
 import { VSEntity } from './entity/VS.entity';
 import { FilterDto } from './dto/request/filter.dto';
+import { PlaydataHistoryEntity } from './entity/PlaydataHistory.entity';
 
 @Injectable()
 export class PlaydataService {
@@ -131,6 +132,19 @@ export class PlaydataService {
       throw new NoPlaydataException();
     }
     return PlaydataEntity.createDto(playdata);
+  }
+  async findPlaydataHistoryByChart(
+    account: User,
+    chartIdx: number,
+  ): Promise<PlaydataHistoryEntity[]> {
+    const playdata = await this.playdataRepository.selectPlaydataHistoryByChart(
+      account.idx,
+      chartIdx,
+    );
+    if (playdata === null) {
+      throw new NoPlaydataException();
+    }
+    return playdata.map((data) => PlaydataHistoryEntity.createDto(data));
   }
 
   async findPlaydataByLevel(
