@@ -50,6 +50,24 @@ export class PlaydataController {
     const data = await this.playdataService.findPlaydataByChart(user, chartIdx);
     return PlaydataDto.createResponse(user, data);
   }
+
+  /**
+   * 최근 5개 기록
+   */
+  @Get('/history/:chartIdx')
+  @ExceptionList([new NoPlaydataException()])
+  @AuthCheck(1)
+  async getPlaydataHistory(
+    @GetUser() user: User,
+    @Param('chartIdx') chartIdx: number,
+  ): Promise<PlaydataDto> {
+    const data = await this.playdataService.findPlaydataHistoryByChart(
+      user,
+      chartIdx,
+    );
+    return PlaydataDto.createResponse(user, data);
+  }
+
   /**
    * 차트 유저 랭킹
    */

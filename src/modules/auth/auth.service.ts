@@ -61,18 +61,21 @@ export class AuthService {
       signUpDto.sdvxId,
     );
   }
+
   async amendSV(getSdvxIdDto: GetSdvxIdDto, user: User): Promise<void> {
     await this.accountWriteRepository.updateAccountSV(
       user.idx,
       getSdvxIdDto.sdvxId,
     );
   }
+
   async amendPW(getPwDto: GetPwDto, user: User): Promise<void> {
     await this.accountWriteRepository.updateAccountPW(
       user.idx,
       hashSync(getPwDto.pw),
     );
   }
+  
   async withdraw(user: User) {
     await this.accountWriteRepository.softDeleteAccount(user.idx);
   }

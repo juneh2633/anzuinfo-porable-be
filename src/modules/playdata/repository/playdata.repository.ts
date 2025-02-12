@@ -72,6 +72,24 @@ export class PlaydataRepository {
       },
     });
   }
+
+  async selectPlaydataHistoryByChart(
+    accountIdx: number,
+    chartIdx: number,
+  ): Promise<Playdata[]> {
+    return await this.prismaService.playdata.findMany({
+      where: {
+        accountIdx: accountIdx,
+        chartIdx: chartIdx,
+      },
+      distinct: ['score'],
+      orderBy: {
+        score: 'desc',
+      },
+      take: 5,
+    });
+  }
+
   async selectPlaydataAll(
     accountIdx: number,
     updatedAt: Date,

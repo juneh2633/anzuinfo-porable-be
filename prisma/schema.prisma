@@ -14,9 +14,9 @@ model Account {
   vf         Int?
   playCount  Int?       @map("play_count")
   createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  id         String     @unique @db.VarChar(255)
+  id         String     @db.VarChar(255)
   deletedAt  DateTime?  @map("deleted_at") @db.Timestamptz(6)
-  updatedAt   DateTime?  @map("update_at") @db.Timestamptz(6)
+  updatedAt  DateTime?  @map("update_at") @db.Timestamptz(6)
   playerName String?    @map("player_name") @db.VarChar(255)
   skillLevel String?    @map("skill_level") @db.VarChar(255)
   playdata   Playdata[]
@@ -61,7 +61,7 @@ model Playdata {
   score      Int
   exScore    Int?     @map("ex_score")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  scoreIdx  Int?     @map("score_idx")
+  scoreIdx   Int?     @map("score_idx")
   account    Account  @relation(fields: [accountIdx], references: [idx], onDelete: NoAction, onUpdate: NoAction, map: "fk_account_to_playdata")
   chart      Chart    @relation(fields: [chartIdx], references: [idx], onDelete: NoAction, onUpdate: NoAction, map: "fk_chart_to_playdata")
 
