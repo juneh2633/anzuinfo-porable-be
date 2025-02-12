@@ -4,7 +4,7 @@ import { SetTagDto } from './dto/request/set-tag.dto.';
 import { AuthCheck } from 'src/common/decorator/auth-check.decorator';
 import { GetUser } from 'src/common/decorator/get-user.decorator';
 import { User } from '../auth/model/user.model';
-import { SuccessResponseDto } from 'src/common/dto/success-response.dto';
+import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
 
 @Controller('tag')
 export class TagController {
