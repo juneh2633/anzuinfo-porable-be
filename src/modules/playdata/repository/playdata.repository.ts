@@ -8,6 +8,7 @@ import { PlaydataVS } from '../model/playdata-vs.model';
 import { FilterDto } from '../dto/request/filter.dto';
 import { RedisService } from 'src/common/redis/redis.service';
 import { PlaydataEntity } from '../entity/Playdata.entity';
+import { PlaydataVfRaw } from '../model/playdata-vf-raw.model';
 interface playdata {
   accountIdx: number;
   chartIdx: number;
@@ -59,6 +60,40 @@ export class PlaydataRepository {
       take: 50,
     });
   }
+
+  async selectVFRaw(
+    accountIdx: number,
+    updatedAt: Date,
+  ): Promise<PlaydataVfRaw[]> {
+    return await this.prismaService.playdata.findMany({
+      select: {
+        chart: {
+          select: {
+            song: {
+              select: {
+                title: true,
+              },
+            },
+            level: true,
+            jacket: true,
+            type: true,
+          },
+        },
+        rank: true,
+        score: true,
+        chartVf: true,
+      },
+      where: {
+        accountIdx: accountIdx,
+        createdAt: updatedAt,
+      },
+      orderBy: {
+        chartVf: 'desc',
+      },
+      take: 50,
+    });
+  }
+
   async selectPlaydataByChart(
     accountIdx: number,
     updatedAt: Date,

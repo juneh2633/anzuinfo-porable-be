@@ -15,6 +15,7 @@ import { PlaydataEntity } from './entity/Playdata.entity';
 import { VSEntity } from './entity/VS.entity';
 import { FilterDto } from './dto/request/filter.dto';
 import { PlaydataHistoryEntity } from './entity/PlaydataHistory.entity';
+import { PlaydataVfRawEntity } from './entity/PlaydataVfRaw.entity';
 
 @Injectable()
 export class PlaydataService {
@@ -118,6 +119,17 @@ export class PlaydataService {
     return playdataList.map((playdata) => PlaydataEntity.createDto(playdata));
   }
 
+  async findVFTableRaw(account: User): Promise<PlaydataVfRawEntity[]> {
+    const updatedAt = await this.accountService.findUserUpateAt(account.idx);
+    const playdataList = await this.playdataRepository.selectVFRaw(
+      account.idx,
+      updatedAt,
+    );
+    return playdataList.map((playdata) =>
+      PlaydataVfRawEntity.createDto(playdata),
+    );
+  }
+
   async findPlaydataByChart(
     account: User,
     chartIdx: number,
@@ -141,9 +153,7 @@ export class PlaydataService {
       account.idx,
       chartIdx,
     );
-    if (playdata === null) {
-      throw new NoPlaydataException();
-    }
+
     return playdata.map((data) => PlaydataHistoryEntity.createDto(data));
   }
 
