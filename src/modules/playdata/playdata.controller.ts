@@ -38,6 +38,16 @@ export class PlaydataController {
   }
 
   /**
+   * 로그인 유저 볼포스 표
+   */
+  @Get('/volforce/raw')
+  @AuthCheck(1)
+  async getVolforceRaw(@GetUser() user: User): Promise<PlaydataDto> {
+    const data = await this.playdataService.findVFTable(user);
+    return PlaydataDto.createResponse(user, data);
+  }
+
+  /**
    * 로그인 유저 해당 차트 기록
    */
   @Get('/chart/:chartIdx')

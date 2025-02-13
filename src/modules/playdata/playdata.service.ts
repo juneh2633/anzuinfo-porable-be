@@ -118,6 +118,15 @@ export class PlaydataService {
     return playdataList.map((playdata) => PlaydataEntity.createDto(playdata));
   }
 
+  async findVFTableRaw(account: User): Promise<PlaydataEntity[]> {
+    const updatedAt = await this.accountService.findUserUpateAt(account.idx);
+    const playdataList = await this.playdataRepository.selectVFRaw(
+      account.idx,
+      updatedAt,
+    );
+    return playdataList.map((playdata) => PlaydataEntity.createDto(playdata));
+  }
+
   async findPlaydataByChart(
     account: User,
     chartIdx: number,
