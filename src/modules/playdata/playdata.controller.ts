@@ -65,7 +65,7 @@ export class PlaydataController {
    * 최근 5개 기록
    */
   @Get('/history/:chartIdx')
-  @ExceptionList([new NoPlaydataException()])
+  @ExceptionList([])
   @AuthCheck(1)
   async getPlaydataHistory(
     @GetUser() user: User,
