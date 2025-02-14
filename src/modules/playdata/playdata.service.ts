@@ -194,7 +194,7 @@ export class PlaydataService {
         {} as Record<number, (typeof playdataList)[0]>,
       ),
     );
-    return uniqueData;
+    return uniqueData.sort((a, b) => b.score - a.score);
   }
 
   async findPlaydataAll(accountIdx: number): Promise<PlaydataEntity[]> {

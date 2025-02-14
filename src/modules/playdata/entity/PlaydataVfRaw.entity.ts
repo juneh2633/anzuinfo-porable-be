@@ -1,3 +1,4 @@
+import { CommonService } from 'src/common/common.service';
 import { PlaydataVfRaw } from '../model/playdata-vf-raw.model';
 
 export class PlaydataVfRawEntity {
@@ -6,7 +7,7 @@ export class PlaydataVfRawEntity {
   jacket: string;
   type: string;
   score: number;
-  rank: number;
+  clearRankIdx: number;
   chartVf: number;
 
   constructor(data: any) {
@@ -20,7 +21,7 @@ export class PlaydataVfRawEntity {
       jacket: playdataDao.chart.jacket,
       type: playdataDao.chart.type,
       score: playdataDao.score,
-      rank: playdataDao.rank,
+      clearRankIdx: playdataDao.rank,
       chartVf: playdataDao.chartVf,
     });
   }

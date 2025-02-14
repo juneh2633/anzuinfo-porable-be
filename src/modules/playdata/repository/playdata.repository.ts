@@ -193,9 +193,6 @@ export class PlaydataRepository {
           },
         },
       },
-      orderBy: {
-        score: 'desc',
-      },
     });
   }
 
