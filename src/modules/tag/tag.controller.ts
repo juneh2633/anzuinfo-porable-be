@@ -15,6 +15,18 @@ export class TagController {
     return await this.tagService.findTagAllByCache();
   }
 
+  /**
+   * 태그 캐싱
+   */
+  @Post('/cache')
+  async cacheTagAll() {
+    await this.tagService.cacheTagAll();
+    return new SuccessResponseDto();
+  }
+
+  /**
+   * 태그 생성
+   */
   @Post()
   @AuthCheck(1)
   async createTag(
