@@ -25,7 +25,7 @@ export class TagController {
   }
 
   /**
-   * 태그 생성
+   * 
    */
   @Post()
   @AuthCheck(1)
