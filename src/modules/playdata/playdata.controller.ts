@@ -13,6 +13,7 @@ import { GetByLevelDto } from './dto/request/get-by-level.dto';
 import { GetVSDto } from './dto/request/get-vs.dto';
 import { FilterDto } from './dto/request/filter.dto';
 import { VfTableService } from './vfTable.service';
+import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
 
 @ApiTags('Playdata API')
 @Controller('playdata')
@@ -28,6 +29,15 @@ export class PlaydataController {
   @Post('/')
   async inputPlaydata(@Body() getDataDto: GetDataDto) {
     await this.playdataService.postData(getDataDto);
+    return { status: 'success', message: 'Data received successfully' };
+  }
+
+  /**
+   * 갱신코드 데이터 받는 api (인앱)
+   */
+  @Post('/auto')
+  async inputAutoPlaydata(@Body() getDataDto: GetAutoDataDto) {
+    await this.playdataService.autoPostData(getDataDto);
     return { status: 'success', message: 'Data received successfully' };
   }
 

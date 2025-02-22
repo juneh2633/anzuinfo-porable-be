@@ -16,6 +16,7 @@ import { VSEntity } from './entity/VS.entity';
 import { FilterDto } from './dto/request/filter.dto';
 import { PlaydataHistoryEntity } from './entity/PlaydataHistory.entity';
 import { PlaydataVfRawEntity } from './entity/PlaydataVfRaw.entity';
+import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
 
 @Injectable()
 export class PlaydataService {
@@ -72,13 +73,12 @@ export class PlaydataService {
         chartIdxWithLevel = await this.redisService.get(safeKey);
       }
       if (chartIdxWithLevel === null) {
-        console.log(title);
         return null;
       }
+
       const [chartIdx, level] = chartIdxWithLevel.split('@@');
 
       const rankIdx = this.commonService.getRankIdx(status);
-
       return {
         accountIdx: user.idx,
         chartIdx: parseInt(chartIdx, 10),
@@ -102,6 +102,86 @@ export class PlaydataService {
       playerName,
       parseInt(playCount, 10),
       Math.round(parseFloat(forcePoint) * 1000),
+      skillLevel,
+      now,
+    );
+
+    await this.setPlaydataByRedis(user.idx);
+    console.log(`${validPlaydata.length}개의 데이터가 저장되었습니다.`);
+  }
+
+  async autoPostData(getDataDto: GetAutoDataDto) {
+    const { sdvxId, playerName, vf, skillLevel, playCount } =
+      getDataDto.account;
+
+    const now = new Date();
+    const user = await this.accountRepository.selectAccountBySdvxId(sdvxId);
+    if (user === null) {
+      throw new NoUserException();
+    }
+
+    const playdataPromises = getDataDto.playdata.map((track) => {
+      const { title, artist, chart } = track;
+
+      return chart.map(async (scoreData) => {
+        const { chartType, clearType, score } = scoreData;
+        const typeAndTitle = chartType + '____' + title;
+        const safeKey = crypto
+          .createHash('sha256')
+          .update(typeAndTitle, 'utf8')
+          .digest('hex');
+        let chartIdxWithLevel = '';
+        if (title === 'Prayer' && artist === 'ぺのれり') {
+          if (chartType === 'novice') {
+            chartIdxWithLevel = '2521@@6';
+          } else if (chartType === 'advanced') {
+            chartIdxWithLevel = '2522@@12';
+          } else {
+            chartIdxWithLevel = '2523@@18';
+          }
+        } else if (title === 'Prayer') {
+          if (chartType === 'novice') {
+            chartIdxWithLevel = '7231@@6';
+          } else if (chartType === 'advanced') {
+            chartIdxWithLevel = '7232@@12';
+          } else if (chartType === 'exhaust') {
+            chartIdxWithLevel = '7233@@15';
+          } else {
+            chartIdxWithLevel = '7234@@18';
+          }
+        } else {
+          chartIdxWithLevel = await this.redisService.get(safeKey);
+        }
+        if (chartIdxWithLevel === null) {
+          return null;
+        }
+
+        const [chartIdx, level] = chartIdxWithLevel.split('@@');
+
+        const rankIdx = this.commonService.getRankIdx(clearType);
+        return {
+          accountIdx: user.idx,
+          chartIdx: parseInt(chartIdx, 10),
+          chartVf: Math.floor(
+            this.commonService.getVolforce(parseInt(level, 10), score, rankIdx),
+          ),
+          rank: rankIdx,
+          score: score,
+          createdAt: now,
+        };
+      });
+    });
+
+    const playdata = await Promise.all(playdataPromises.flat().map((p) => p));
+
+    const validPlaydata = playdata.filter((data) => data !== null);
+
+    await this.playdataRepository.insertPlaydataList(validPlaydata);
+    await this.accountRepository.updateAccountPlaydata(
+      user.idx,
+      playerName,
+      playCount,
+      Math.round(vf * 1000),
       skillLevel,
       now,
     );
