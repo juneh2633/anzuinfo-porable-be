@@ -37,8 +37,8 @@ export class PlaydataController {
    */
   @Post('/auto')
   async inputAutoPlaydata(@Body() getDataDto: GetAutoDataDto) {
-    await this.playdataService.autoPostData(getDataDto);
-    return { status: 'success', message: 'Data received successfully' };
+    const newRecored = await this.playdataService.autoPostData(getDataDto);
+    return PlaydataDto.createResponse(null, newRecored);
   }
 
   /**

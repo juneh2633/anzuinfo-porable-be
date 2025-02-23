@@ -17,6 +17,7 @@ import { FilterDto } from './dto/request/filter.dto';
 import { PlaydataHistoryEntity } from './entity/PlaydataHistory.entity';
 import { PlaydataVfRawEntity } from './entity/PlaydataVfRaw.entity';
 import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
+import { PlaydataCompareEntity } from './entity/PlaydataCompare.entity';
 
 @Injectable()
 export class PlaydataService {
@@ -119,12 +120,15 @@ export class PlaydataService {
     if (user === null) {
       throw new NoUserException();
     }
+    const recentPlaydataList = await this.getPlaydataAllByRedis(user.idx);
+    let newRecordList = new Array<PlaydataCompareEntity>();
 
     const playdataPromises = getDataDto.playdata.map((track) => {
       const { title, artist, chart } = track;
 
       return chart.map(async (scoreData) => {
         const { chartType, clearType, score } = scoreData;
+        console.log(title);
         const typeAndTitle = chartType + '____' + title;
         const safeKey = crypto
           .createHash('sha256')
@@ -152,6 +156,7 @@ export class PlaydataService {
         } else {
           chartIdxWithLevel = await this.redisService.get(safeKey);
         }
+
         if (chartIdxWithLevel === null) {
           return null;
         }
@@ -159,7 +164,11 @@ export class PlaydataService {
         const [chartIdx, level] = chartIdxWithLevel.split('@@');
 
         const rankIdx = this.commonService.getRankIdx(clearType);
-        return {
+
+        const data = recentPlaydataList.find(
+          (data) => data.chartIdx === parseInt(chartIdx, 10),
+        );
+        const playdataObj = {
           accountIdx: user.idx,
           chartIdx: parseInt(chartIdx, 10),
           chartVf: Math.floor(
@@ -169,6 +178,21 @@ export class PlaydataService {
           score: score,
           createdAt: now,
         };
+        if (
+          !data &&
+          (playdataObj.score > data.score || playdataObj.rank !== data.rank)
+        ) {
+          newRecordList.push(
+            PlaydataCompareEntity.createEntity(
+              data,
+              data.score,
+              data.rank,
+              data.chartVf,
+            ),
+          );
+        }
+
+        return playdataObj;
       });
     });
 
@@ -188,6 +212,7 @@ export class PlaydataService {
 
     await this.setPlaydataByRedis(user.idx);
     console.log(`${validPlaydata.length}개의 데이터가 저장되었습니다.`);
+    return newRecordList;
   }
 
   async findVFTable(account: User): Promise<PlaydataEntity[]> {
