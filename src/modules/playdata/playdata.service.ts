@@ -128,7 +128,8 @@ export class PlaydataService {
 
       return chart.map(async (scoreData) => {
         const { chartType, clearType, score } = scoreData;
-        const typeAndTitle = chartType + '____' + title;
+        const typeAndTitle =
+          chartType + '____' + title.replace('(EXIT TUNES)', '');
         const safeKey = crypto
           .createHash('sha256')
           .update(typeAndTitle, 'utf8')
