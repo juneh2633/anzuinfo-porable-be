@@ -128,7 +128,6 @@ export class PlaydataService {
 
       return chart.map(async (scoreData) => {
         const { chartType, clearType, score } = scoreData;
-        console.log(title);
         const typeAndTitle = chartType + '____' + title;
         const safeKey = crypto
           .createHash('sha256')
@@ -179,15 +178,16 @@ export class PlaydataService {
           createdAt: now,
         };
         if (
-          !data &&
-          (playdataObj.score > data.score || playdataObj.rank !== data.rank)
+          data === undefined ||
+          playdataObj.score > data.score ||
+          playdataObj.rank !== data.rank
         ) {
           newRecordList.push(
             PlaydataCompareEntity.createEntity(
               data,
-              data.score,
-              data.rank,
-              data.chartVf,
+              playdataObj.score,
+              playdataObj.rank,
+              playdataObj.chartVf,
             ),
           );
         }
