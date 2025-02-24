@@ -29,6 +29,7 @@ export class PlaydataService {
   ) {}
 
   async autoPostData(getDataDto: GetAutoDataDto) {
+    console.log('start');
     const { sdvxId, playerName, vf, skillLevel, playCount } =
       getDataDto.account;
 
