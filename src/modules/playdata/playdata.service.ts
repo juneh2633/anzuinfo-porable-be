@@ -78,7 +78,8 @@ export class PlaydataService {
         }
 
         if (chartIdxWithLevel === null) {
-          return null;
+          console.log(chartIdxWithLevel, title);
+          continue;
         }
 
         const [chartIdx, level] = chartIdxWithLevel.split('@@');
@@ -118,7 +119,7 @@ export class PlaydataService {
     }
     console.log(newPlaydataList.length);
     await this.playdataRepository.insertPlaydataList(newPlaydataList);
-    console.log('@@');
+
     await this.accountRepository.updateAccountPlaydata(
       user.idx,
       playerName,
