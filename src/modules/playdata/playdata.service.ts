@@ -46,6 +46,7 @@ export class PlaydataService {
 
     for (const track of getDataDto.playdata) {
       const { title, artist, chart } = track;
+      console.log(title);
       for (const scoreData of chart) {
         const { chartType, clearType, score } = scoreData;
         const typeAndTitle =
@@ -116,7 +117,7 @@ export class PlaydataService {
         }
       }
     }
-
+    console.log('@@@@');
     await this.playdataRepository.insertPlaydataList(newPlaydataList);
     await this.accountRepository.updateAccountPlaydata(
       user.idx,
