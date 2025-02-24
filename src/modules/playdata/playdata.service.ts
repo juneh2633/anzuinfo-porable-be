@@ -16,6 +16,7 @@ import { PlaydataHistoryEntity } from './entity/PlaydataHistory.entity';
 import { PlaydataVfRawEntity } from './entity/PlaydataVfRaw.entity';
 import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
 import { PlaydataCompareEntity } from './entity/PlaydataCompare.entity';
+import { PlaydataDao } from './dao/playdata.dao';
 
 @Injectable()
 export class PlaydataService {
@@ -27,104 +28,24 @@ export class PlaydataService {
     private readonly accountService: AccountService,
   ) {}
 
-  async postData(getDataDto: GetDataDto) {
-    console.log(getDataDto.user);
-    const [sdvxId, playerName, forcePoint, skillLevel, playCount] =
-      getDataDto.user.split('\t');
-    const now = new Date();
-    const user = await this.accountRepository.selectAccountBySdvxId(sdvxId);
-    if (user === null) {
-      throw new NoUserException();
-    }
-
-    const playdataPromises = getDataDto.tracks.map(async (track) => {
-      const [title, type, status, score] = track.split('\t');
-
-      const typeAndTitle = type + '____' + title;
-
-      const safeKey = crypto
-        .createHash('sha256')
-        .update(typeAndTitle, 'utf8')
-        .digest('hex');
-
-      let chartIdxWithLevel = '';
-      if (title.startsWith('Prayer')) {
-        if (title === 'Prayer (MÚSECA)') {
-          if (type === 'novice') {
-            chartIdxWithLevel = '7231@@6';
-          } else if (type === 'advanced') {
-            chartIdxWithLevel = '7232@@12';
-          } else if (type === 'exhaust') {
-            chartIdxWithLevel = '7233@@15';
-          } else {
-            chartIdxWithLevel = '7234@@18';
-          }
-        } else {
-          if (type === 'novice') {
-            chartIdxWithLevel = '2521@@6';
-          } else if (type === 'advanced') {
-            chartIdxWithLevel = '2522@@12';
-          } else {
-            chartIdxWithLevel = '2523@@18';
-          }
-        }
-      } else {
-        chartIdxWithLevel = await this.redisService.get(safeKey);
-      }
-      if (chartIdxWithLevel === null) {
-        return null;
-      }
-
-      const [chartIdx, level] = chartIdxWithLevel.split('@@');
-
-      const rankIdx = this.commonService.getRankIdx(status);
-      return {
-        accountIdx: user.idx,
-        chartIdx: parseInt(chartIdx, 10),
-        chartVf: this.commonService.getVolforce(
-          parseInt(level, 10),
-          parseInt(score, 10),
-          rankIdx,
-        ),
-        rank: rankIdx,
-        score: parseInt(score, 10),
-        createdAt: now,
-      };
-    });
-
-    const playdata = await Promise.all(playdataPromises);
-
-    const validPlaydata = playdata.filter((data) => data !== null);
-    await this.playdataRepository.insertPlaydataList(validPlaydata);
-    await this.accountRepository.updateAccountPlaydata(
-      user.idx,
-      playerName,
-      parseInt(playCount, 10),
-      Math.round(parseFloat(forcePoint) * 1000),
-      skillLevel,
-      now,
-    );
-
-    await this.setPlaydataByRedis(user.idx);
-    console.log(`${validPlaydata.length}개의 데이터가 저장되었습니다.`);
-  }
-
   async autoPostData(getDataDto: GetAutoDataDto) {
     const { sdvxId, playerName, vf, skillLevel, playCount } =
       getDataDto.account;
 
-    const now = new Date();
     const user = await this.accountRepository.selectAccountBySdvxId(sdvxId);
+
     if (user === null) {
       throw new NoUserException();
     }
+
+    const now = new Date();
     const recentPlaydataList = await this.getPlaydataAllByRedis(user.idx);
     let newRecordList = new Array<PlaydataCompareEntity>();
+    let newPlaydataList = new Array<PlaydataDao>();
 
-    const playdataPromises = getDataDto.playdata.map((track) => {
+    for (const track of getDataDto.playdata) {
       const { title, artist, chart } = track;
-
-      return chart.map(async (scoreData) => {
+      for (const scoreData of chart) {
         const { chartType, clearType, score } = scoreData;
         const typeAndTitle =
           chartType + '____' + title.replace('(EXIT TUNES)', '');
@@ -166,7 +87,7 @@ export class PlaydataService {
         const data = recentPlaydataList.find(
           (data) => data.chartIdx === parseInt(chartIdx, 10),
         );
-        const playdataObj = {
+        const playdataObj: PlaydataDao = {
           accountIdx: user.idx,
           chartIdx: parseInt(chartIdx, 10),
           chartVf: Math.floor(
@@ -176,6 +97,7 @@ export class PlaydataService {
           score: score,
           createdAt: now,
         };
+
         if (
           data === undefined ||
           playdataObj.score > data.score ||
@@ -189,17 +111,12 @@ export class PlaydataService {
               playdataObj.chartVf,
             ),
           );
+          newPlaydataList.push(playdataObj);
         }
+      }
+    }
 
-        return playdataObj;
-      });
-    });
-
-    const playdata = await Promise.all(playdataPromises.flat().map((p) => p));
-
-    const validPlaydata = playdata.filter((data) => data !== null);
-
-    await this.playdataRepository.insertPlaydataList(validPlaydata);
+    await this.playdataRepository.insertPlaydataList(newPlaydataList);
     await this.accountRepository.updateAccountPlaydata(
       user.idx,
       playerName,
@@ -209,8 +126,8 @@ export class PlaydataService {
       now,
     );
 
-    await this.setPlaydataByRedis(user.idx);
-    console.log(`${validPlaydata.length}개의 데이터가 저장되었습니다.`);
+    await this.cachePlaydataByRedis(user.idx);
+    console.log(`${newPlaydataList.length}개의 데이터가 저장되었습니다.`);
     return newRecordList;
   }
 
@@ -303,10 +220,8 @@ export class PlaydataService {
 
   async findPlaydataAll(accountIdx: number): Promise<PlaydataEntity[]> {
     const target = await this.accountRepository.selectAccountByIdx(accountIdx);
-    const playdataList = await this.playdataRepository.selectPlaydataAll(
-      accountIdx,
-      target.updatedAt,
-    );
+    const playdataList =
+      await this.playdataRepository.selectPlaydataAll(accountIdx);
     return playdataList.map((playdata) => PlaydataEntity.createDto(playdata));
   }
 
@@ -346,11 +261,14 @@ export class PlaydataService {
     return playdataList.map((playdata) => PlaydataEntity.createDto(playdata));
   }
 
-  async setPlaydataByRedis(accountIdx: number): Promise<void> {
+  async cachePlaydataByRedis(accountIdx: number): Promise<void> {
     const playdataEntity = await this.findPlaydataAll(accountIdx);
     await this.playdataRepository.setPlaydataAll(accountIdx, playdataEntity);
   }
 
+  async deleteCachedPlaydata(accountIdx: number): Promise<void> {
+    await this.playdataRepository.deletePlaydataByRedis(accountIdx);
+  }
   async getPlaydataAllByRedis(accountIdx: number): Promise<PlaydataEntity[]> {
     const data = await this.playdataRepository.getPlaydataAll(accountIdx);
     if (data === null || data.length === 0) {
@@ -359,6 +277,4 @@ export class PlaydataService {
 
     return data;
   }
-
-  // atest
 }

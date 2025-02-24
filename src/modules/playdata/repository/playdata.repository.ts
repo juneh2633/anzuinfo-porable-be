@@ -9,13 +9,8 @@ import { FilterDto } from '../dto/request/filter.dto';
 import { RedisService } from 'src/common/redis/redis.service';
 import { PlaydataEntity } from '../entity/Playdata.entity';
 import { PlaydataVfRaw } from '../model/playdata-vf-raw.model';
-interface playdata {
-  accountIdx: number;
-  chartIdx: number;
-  chartVf: number;
-  rank: number;
-  score: number;
-}
+import { PlaydataDao } from '../dao/playdata.dao';
+
 @Injectable()
 export class PlaydataRepository {
   constructor(
@@ -42,7 +37,7 @@ export class PlaydataRepository {
     });
   }
 
-  async insertPlaydataList(playdataList: playdata[]): Promise<void> {
+  async insertPlaydataList(playdataList: PlaydataDao[]): Promise<void> {
     await this.prismaService.playdata.createMany({
       data: playdataList,
     });
@@ -125,18 +120,16 @@ export class PlaydataRepository {
     });
   }
 
-  async selectPlaydataAll(
-    accountIdx: number,
-    updatedAt: Date,
-  ): Promise<Playdata[]> {
+  async selectPlaydataAll(accountIdx: number): Promise<Playdata[]> {
     return await this.prismaService.playdata.findMany({
       where: {
         accountIdx: accountIdx,
-        createdAt: updatedAt,
       },
       orderBy: {
         chartIdx: 'asc',
+        createdAt: 'desc',
       },
+      distinct: ['chartIdx'],
     });
   }
 
@@ -281,6 +274,10 @@ export class PlaydataRepository {
   ): Promise<void> {
     const serializedData = JSON.stringify(playdataList);
     await this.redisService.set(accountIdx.toString(), serializedData);
+  }
+
+  async deletePlaydataByRedis(accountIdx: number): Promise<void> {
+    await this.redisService.delete(accountIdx.toString());
   }
 
   async getPlaydataAll(accountIdx: number): Promise<PlaydataEntity[]> {
