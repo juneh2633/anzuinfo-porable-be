@@ -26,7 +26,7 @@ export class AuthService {
       where: { id: signInDto.id, deletedAt: null },
     });
 
-    if (!account) {
+    if (!account || !account.pw) {
       throw new LoginFailException();
     }
     const passwordMatch = compareSync(signInDto.pw, account.pw);
