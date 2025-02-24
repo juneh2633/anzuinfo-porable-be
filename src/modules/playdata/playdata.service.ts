@@ -36,6 +36,7 @@ export class PlaydataService {
     const user = await this.accountRepository.selectAccountBySdvxId(sdvxId);
 
     if (user === null) {
+      console.log('null');
       throw new NoUserException();
     }
 
