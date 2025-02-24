@@ -125,11 +125,11 @@ export class PlaydataRepository {
       where: {
         accountIdx: accountIdx,
       },
+      distinct: ['chartIdx'],
       orderBy: {
         chartIdx: 'asc',
         createdAt: 'desc',
       },
-      distinct: ['chartIdx'],
     });
   }
 
