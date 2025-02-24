@@ -116,7 +116,7 @@ export class PlaydataService {
         }
       }
     }
-
+    console.log('@@@@');
     await this.playdataRepository.insertPlaydataList(newPlaydataList);
     await this.accountRepository.updateAccountPlaydata(
       user.idx,
