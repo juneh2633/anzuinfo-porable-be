@@ -30,13 +30,13 @@ export class PlaydataService {
 
   async autoPostData(getDataDto: GetAutoDataDto) {
     console.log('start');
+    console.log(getDataDto.account);
     const { sdvxId, playerName, vf, skillLevel, playCount } =
       getDataDto.account;
-
+    console.log(sdvxId);
     const user = await this.accountRepository.selectAccountBySdvxId(sdvxId);
 
     if (user === null) {
-      console.log('null');
       throw new NoUserException();
     }
 
