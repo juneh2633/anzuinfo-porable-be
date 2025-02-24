@@ -275,7 +275,7 @@ export class PlaydataService {
   async getPlaydataAllByRedis(accountIdx: number): Promise<PlaydataEntity[]> {
     const data = await this.playdataRepository.getPlaydataAll(accountIdx);
     if (data === null || data.length === 0) {
-      throw new NoPlaydataException();
+      return [];
     }
 
     return data;
