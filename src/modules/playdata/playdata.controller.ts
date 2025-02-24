@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { PlaydataService } from './playdata.service';
 import { ApiTags } from '@nestjs/swagger';
 import { GetDataDto } from './dto/request/get-data.dto';
@@ -14,6 +22,7 @@ import { GetVSDto } from './dto/request/get-vs.dto';
 import { FilterDto } from './dto/request/filter.dto';
 import { VfTableService } from './vfTable.service';
 import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
+import { AccountIdxDto } from './dto/request/account-idx.dto';
 
 @ApiTags('Playdata API')
 @Controller('playdata')
@@ -23,14 +32,14 @@ export class PlaydataController {
     private readonly vfTableService: VfTableService,
   ) {}
 
-  /**
-   * 갱신코드 데이터 받는 api
-   */
-  @Post('/')
-  async inputPlaydata(@Body() getDataDto: GetDataDto) {
-    await this.playdataService.postData(getDataDto);
-    return { status: 'success', message: 'Data received successfully' };
-  }
+  // /**
+  //  * 갱신코드 데이터 받는 api
+  //  */
+  // @Post('/')
+  // async inputPlaydata(@Body() getDataDto: GetDataDto) {
+  //   await this.playdataService.postData(getDataDto);
+  //   return { status: 'success', message: 'Data received successfully' };
+  // }
 
   /**
    * 갱신코드 데이터 받는 api (인앱)
@@ -174,7 +183,7 @@ export class PlaydataController {
   @ExceptionList([new NoPlaydataException()])
   @AuthCheck(1)
   async redisTestPost(@GetUser() user: User): Promise<SuccessResponseDto> {
-    await this.playdataService.setPlaydataByRedis(user.idx);
+    await this.playdataService.cachePlaydataByRedis(user.idx);
     return new SuccessResponseDto();
   }
 
@@ -189,14 +198,31 @@ export class PlaydataController {
     return PlaydataDto.createResponse(user, data);
   }
 
-  // /**
-  //  * 플레이 데이터 모두 가져오기
-  //  */
-  // @Get('/all')
-  // @ExceptionList([new NoPlaydataException()])
-  // @AuthCheck(1)
-  // async getAllData(@GetUser() user: User): Promise<PlaydataDto> {
-  //   const data = await this.playdataService.findPlaydataAll(user.idx);
-  //   return PlaydataDto.createResponse(user, data);
-  // }
+  /**
+   * 플레이 데이터 캐싱 가져오기
+   */
+  @Delete('/cache')
+  @ExceptionList([new NoPlaydataException()])
+  @AuthCheck(2)
+  async redisDelete(
+    @GetUser() user: User,
+    @Body() accountIdxDto: AccountIdxDto,
+  ): Promise<SuccessResponseDto> {
+    await this.playdataService.deleteCachedPlaydata(accountIdxDto.accountIdx);
+    return new SuccessResponseDto();
+  }
+
+  /**
+   * 플레이 데이터 수동 캐싱
+   */
+  @Post('/cache/other')
+  @ExceptionList([new NoPlaydataException()])
+  @AuthCheck(2)
+  async redisTestPostOther(
+    @GetUser() user: User,
+    @Body() accountIdxDto: AccountIdxDto,
+  ): Promise<SuccessResponseDto> {
+    await this.playdataService.cachePlaydataByRedis(accountIdxDto.accountIdx);
+    return new SuccessResponseDto();
+  }
 }
