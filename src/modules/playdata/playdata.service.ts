@@ -29,11 +29,9 @@ export class PlaydataService {
   ) {}
 
   async autoPostData(getDataDto: GetAutoDataDto) {
-    console.log('start');
-    console.log(getDataDto.account);
     const { sdvxId, playerName, vf, skillLevel, playCount } =
       getDataDto.account;
-    console.log(sdvxId);
+
     const user = await this.accountRepository.selectAccountBySdvxId(sdvxId);
 
     if (user === null) {
@@ -47,7 +45,7 @@ export class PlaydataService {
 
     for (const track of getDataDto.playdata) {
       const { title, artist, chart } = track;
-      console.log(title);
+
       for (const scoreData of chart) {
         const { chartType, clearType, score } = scoreData;
         const typeAndTitle =
@@ -118,8 +116,9 @@ export class PlaydataService {
         }
       }
     }
-    console.log('@@@@');
+    console.log(newPlaydataList.length);
     await this.playdataRepository.insertPlaydataList(newPlaydataList);
+    console.log('@@');
     await this.accountRepository.updateAccountPlaydata(
       user.idx,
       playerName,
