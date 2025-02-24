@@ -281,5 +281,9 @@ export class PlaydataService {
     return data;
   }
 
-  // test
+  async test(): Promise<void> {
+    const user =
+      await this.accountRepository.selectAccountBySdvxId('SV-5264-9170');
+    console.log(user);
+  }
 }
