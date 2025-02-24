@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PlaydataRepository } from './repository/playdata.repository';
 import { GetDataDto } from './dto/request/get-data.dto';
-import { PrismaService } from 'src/common/prisma/prisma.service';
 import { RedisService } from 'src/common/redis/redis.service';
 import * as crypto from 'crypto';
 import { CommonService } from 'src/common/common.service';
@@ -10,7 +9,6 @@ import { NoUserException } from './exception/no-user.exception';
 import { NoPlaydataException } from './exception/no-playdata.exception';
 import { User } from '../auth/model/user.model';
 import { AccountService } from '../account/account.service';
-import { PlaydataWithChartEntity } from './entity/PlaydataWithChart.entity';
 import { PlaydataEntity } from './entity/Playdata.entity';
 import { VSEntity } from './entity/VS.entity';
 import { FilterDto } from './dto/request/filter.dto';

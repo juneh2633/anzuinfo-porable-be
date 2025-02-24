@@ -36,7 +36,7 @@ export class AuthService {
       idx: account.idx,
       id: account.id,
       vf: account.vf,
-      rankIdx: 1,
+      rankIdx: account.rankIdx,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     });
@@ -75,7 +75,7 @@ export class AuthService {
       hashSync(getPwDto.pw),
     );
   }
-  
+
   async withdraw(user: User) {
     await this.accountWriteRepository.softDeleteAccount(user.idx);
   }

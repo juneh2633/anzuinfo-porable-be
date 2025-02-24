@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Tag } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { RedisService } from 'src/common/redis/redis.service';
 
@@ -11,6 +12,14 @@ export class TagRepository {
 
   async selectTagAll() {
     return await this.prismaService.tag.findMany();
+  }
+
+  async selectTagByIdx(tagIdx: number): Promise<Tag | null> {
+    return await this.prismaService.tag.findUnique({
+      where: {
+        idx: tagIdx,
+      },
+    });
   }
 
   async insertTag(

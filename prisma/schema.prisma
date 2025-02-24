@@ -19,6 +19,7 @@ model Account {
   updatedAt  DateTime?  @map("update_at") @db.Timestamptz(6)
   playerName String?    @map("player_name") @db.VarChar(255)
   skillLevel String?    @map("skill_level") @db.VarChar(255)
+  rankIdx    Int?       @default(1) @map("rankidx")
   playdata   Playdata[]
   tag        Tag[]
 
