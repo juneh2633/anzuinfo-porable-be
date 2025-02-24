@@ -22,7 +22,7 @@ export class HttpErrorFilter implements ExceptionFilter {
       method: request.method,
       message: exceptionResponse.message || exceptionResponse || null,
     };
-
+    console.log(errorResponse);
     response.status(status).json(errorResponse);
   }
 }
