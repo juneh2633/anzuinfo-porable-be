@@ -126,10 +126,7 @@ export class PlaydataRepository {
         accountIdx: accountIdx,
       },
       distinct: ['chartIdx'],
-      orderBy: {
-        chartIdx: 'asc',
-        createdAt: 'desc',
-      },
+      orderBy: [{ chartIdx: 'asc' }, { createdAt: 'desc' }],
     });
   }
 
