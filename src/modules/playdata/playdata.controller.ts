@@ -20,17 +20,14 @@ import { NoPlaydataException } from './exception/no-playdata.exception';
 import { GetByLevelDto } from './dto/request/get-by-level.dto';
 import { GetVSDto } from './dto/request/get-vs.dto';
 import { FilterDto } from './dto/request/filter.dto';
-import { VfTableService } from './vfTable.service';
 import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
 import { AccountIdxDto } from './dto/request/account-idx.dto';
 
 @ApiTags('Playdata API')
 @Controller('playdata')
 export class PlaydataController {
-  constructor(
-    private readonly playdataService: PlaydataService,
-    private readonly vfTableService: VfTableService,
-  ) {}
+  constructor(private readonly playdataService: PlaydataService) {}
+  ㄴ;
 
   // /**
   //  * 갱신코드 데이터 받는 api
@@ -68,17 +65,6 @@ export class PlaydataController {
   async getVolforceRaw(@GetUser() user: User): Promise<PlaydataDto> {
     const data = await this.playdataService.findVFTableRaw(user);
     return PlaydataDto.createResponse(user, data);
-  }
-
-  /**
-   * 로그인 유저 볼포스 표
-   */
-  @Get('/volforce/test')
-  @AuthCheck(1)
-  async getVolforceRawTest(@GetUser() user: User): Promise<PlaydataDto> {
-    const data = await this.playdataService.findVFTableRaw(user);
-    const a = await this.vfTableService.generateGameImage(data);
-    return PlaydataDto.createResponse(user, a);
   }
 
   /**
