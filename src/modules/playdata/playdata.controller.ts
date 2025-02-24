@@ -211,4 +211,14 @@ export class PlaydataController {
     await this.playdataService.cachePlaydataByRedis(accountIdxDto.accountIdx);
     return new SuccessResponseDto();
   }
+
+  /**
+   * 플레이 데이터 수동 캐싱
+   */
+  @Get('/testst')
+  @ExceptionList([new NoPlaydataException()])
+  async test(): Promise<SuccessResponseDto> {
+    await this.playdataService.test();
+    return new SuccessResponseDto();
+  }
 }

@@ -26,6 +26,7 @@ export class AccountRepository {
   }
 
   async selectAccountBySdvxId(sdvxId: string): Promise<Account | null> {
+    console.log('test');
     const account = await this.prismaService.account.findFirst({
       where: {
         sdvxId: sdvxId,
