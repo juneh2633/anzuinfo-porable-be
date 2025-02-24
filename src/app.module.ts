@@ -8,6 +8,7 @@ import { AccountModule } from './modules/account/account.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TagModule } from './modules/tag/tag.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TagModule } from './modules/tag/tag.module';
     PlaydataModule,
     AccountModule,
     TagModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [],
   controllers: [],
