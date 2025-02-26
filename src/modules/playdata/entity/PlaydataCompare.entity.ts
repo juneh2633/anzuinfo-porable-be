@@ -16,12 +16,13 @@ export class PlaydataCompareEntity {
   }
   public static createEntity(
     recentPlaydataEntity: PlaydataEntity | undefined,
+    chartIdx: number,
     score: number,
     rank: number,
     chartVf: number,
   ) {
     return new PlaydataCompareEntity({
-      chartIdx: recentPlaydataEntity?.chartIdx ?? null,
+      chartIdx: chartIdx,
       recentScore: recentPlaydataEntity?.score ?? null,
       recentRank: recentPlaydataEntity?.rank ?? null,
       recentChartVf: recentPlaydataEntity?.chartVf ?? null,

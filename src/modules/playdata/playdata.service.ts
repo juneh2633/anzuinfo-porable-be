@@ -108,6 +108,7 @@ export class PlaydataService {
           newRecordList.push(
             PlaydataCompareEntity.createEntity(
               data,
+              parseInt(chartIdx, 10),
               playdataObj.score,
               playdataObj.rank,
               playdataObj.chartVf,
