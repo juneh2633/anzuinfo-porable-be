@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PlaydataRepository } from './repository/playdata.repository';
-import { GetDataDto } from './dto/request/get-data.dto';
 import { RedisService } from 'src/common/redis/redis.service';
 import * as crypto from 'crypto';
 import { CommonService } from 'src/common/common.service';
@@ -17,7 +16,7 @@ import { PlaydataVfRawEntity } from './entity/PlaydataVfRaw.entity';
 import { GetAutoDataDto } from './dto/request/get-auto-data.dto';
 import { PlaydataCompareEntity } from './entity/PlaydataCompare.entity';
 import { PlaydataDao } from './dao/playdata.dao';
-
+import { tierlist } from '../../../static/tierlist';
 @Injectable()
 export class PlaydataService {
   constructor(
@@ -282,9 +281,8 @@ export class PlaydataService {
     return data;
   }
 
-  async test(): Promise<void> {
-    const user =
-      await this.accountRepository.selectAccountBySdvxId('SV-5264-9170');
-    console.log(user);
+  async getTierlist(): Promise<any> {
+    const data = tierlist;
+    return data;
   }
 }

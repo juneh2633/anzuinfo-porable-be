@@ -213,12 +213,12 @@ export class PlaydataController {
   }
 
   /**
-   * 플레이 데이터 수동 캐싱
+   * 경험치표 데이터
    */
-  @Get('/testst')
-  @ExceptionList([new NoPlaydataException()])
-  async test(): Promise<SuccessResponseDto> {
-    await this.playdataService.test();
-    return new SuccessResponseDto();
+  @Get('/tierlist')
+  @ExceptionList([])
+  async test(): Promise<any> {
+    const data = this.playdataService.getTierlist();
+    return data;
   }
 }
