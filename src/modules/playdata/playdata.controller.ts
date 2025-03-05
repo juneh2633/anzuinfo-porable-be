@@ -215,10 +215,11 @@ export class PlaydataController {
   /**
    * 경험치표 데이터
    */
-  @Get('/tierlist')
+  @Get('/tier')
   @ExceptionList([])
-  async test(): Promise<any> {
+  async tierlist(): Promise<any> {
     const data = this.playdataService.getTierlist();
     return data;
   }
+
 }
