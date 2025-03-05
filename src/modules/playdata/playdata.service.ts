@@ -208,8 +208,7 @@ export class PlaydataService {
           const accountIdx = current.accountIdx;
           if (
             !acc[accountIdx] ||
-            new Date(current.account.updatedAt) <
-              new Date(acc[accountIdx].account.updatedAt)
+            new Date(current.createdAt) > new Date(acc[accountIdx].createdAt)
           ) {
             acc[accountIdx] = current;
           }
