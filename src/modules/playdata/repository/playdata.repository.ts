@@ -169,6 +169,7 @@ export class PlaydataRepository {
         chartIdx: chartIdx,
         account: {
           deletedAt: null,
+          isHidden: 0,
         },
       },
       include: {

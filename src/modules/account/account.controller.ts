@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Put } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { GetSdvxIdDto } from './dto/request/get-sdvx-id.dto';
 import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
@@ -31,5 +31,25 @@ export class AccountController {
   async getAccount(@GetUser() user: User): Promise<AccountResponseDto> {
     const account = await this.accountService.findUser(user.idx);
     return AccountResponseDto.createResponse(account);
+  }
+
+  /**
+   * 유저 히든정보 가져오기
+   */
+  @Get('/hidden')
+  @AuthCheck(1)
+  async getHidden(@GetUser() user: User): Promise<AccountResponseDto> {
+    const account = await this.accountService.getHidden(user.idx);
+    return AccountResponseDto.createResponse(account);
+  }
+
+  /**
+   * 유저 히든 변경
+   */
+  @Patch('/hidden')
+  @AuthCheck(1)
+  async changeHidden(@GetUser() user: User): Promise<SuccessResponseDto> {
+    await this.accountService.changeHidden(user.idx);
+    return new SuccessResponseDto();
   }
 }

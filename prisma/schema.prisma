@@ -20,6 +20,7 @@ model Account {
   playerName String?    @map("player_name") @db.VarChar(255)
   skillLevel String?    @map("skill_level") @db.VarChar(255)
   rankIdx    Int?       @default(1) @map("rankidx")
+  isHidden   Int?       @default(0) @map("is_hidden")
   playdata   Playdata[]
   tag        Tag[]
 
