@@ -56,4 +56,15 @@ export class AccountRepository {
       },
     });
   }
+
+  async updateHidden(userIdx: number, isHidden: number): Promise<void> {
+    await this.prismaService.account.update({
+      where: {
+        idx: userIdx,
+      },
+      data: {
+        isHidden: isHidden,
+      },
+    });
+  }
 }

@@ -27,4 +27,16 @@ export class AccountService {
     const account = await this.accountRepository.selectAccountByIdx(accountIdx);
     return account.updatedAt;
   }
+
+  async getHidden(accountIdx: number): Promise<number> {
+    const account = await this.accountRepository.selectAccountByIdx(accountIdx);
+    return account.isHidden;
+  }
+  async changeHidden(accountIdx: number): Promise<void> {
+    const account = await this.accountRepository.selectAccountByIdx(accountIdx);
+    await this.accountRepository.updateHidden(
+      accountIdx,
+      (account.isHidden + 1) % 2,
+    );
+  }
 }
