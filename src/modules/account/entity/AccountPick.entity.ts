@@ -7,6 +7,7 @@ export class AccountPickEntity {
   playCount: number;
   vf: number;
   skillLevel: String;
+  isHidden: number;
   updatedAt: number;
   createdAt: number;
 
@@ -21,6 +22,7 @@ export class AccountPickEntity {
       playCount: account.playCount,
       vf: account.vf,
       skillLevel: account.skillLevel,
+      isHidden: account.isHidden,
       updatedAt: account.updatedAt,
       createdAt: account.createdAt,
     });

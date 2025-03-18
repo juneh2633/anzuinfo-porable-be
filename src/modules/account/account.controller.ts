@@ -7,7 +7,6 @@ import { ExceptionList } from 'src/common/decorator/exception-list.decorator';
 import { GetUser } from 'src/common/decorator/get-user.decorator';
 import { User } from '../auth/model/user.model';
 import { AccountResponseDto } from './dto/response/account.response.dto';
-import { IstHiddenResponseDto } from './dto/response/isHidden.response.dto';
 
 @Controller('account')
 export class AccountController {
@@ -32,16 +31,6 @@ export class AccountController {
   async getAccount(@GetUser() user: User): Promise<AccountResponseDto> {
     const account = await this.accountService.findUser(user.idx);
     return AccountResponseDto.createResponse(account);
-  }
-
-  /**
-   * 유저 히든정보 가져오기
-   */
-  @Get('/hidden')
-  @AuthCheck(1)
-  async getHidden(@GetUser() user: User): Promise<IstHiddenResponseDto> {
-    const isHidden = await this.accountService.getHidden(user.idx);
-    return IstHiddenResponseDto.createResponse(isHidden);
   }
 
   /**
