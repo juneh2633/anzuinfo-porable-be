@@ -3,7 +3,6 @@ import { GetSdvxIdDto } from './dto/request/get-sdvx-id.dto';
 import { AccountRepository } from './repository/account.repository';
 import { NoUserException } from './exception/no-user.exception';
 import { AccountPickEntity } from './entity/AccountPick.entity';
-import { IsHiddenEntity } from './entity/IsHidden.entity';
 
 @Injectable()
 export class AccountService {
@@ -25,11 +24,6 @@ export class AccountService {
   async findUserUpateAt(accountIdx: number): Promise<Date> {
     const account = await this.accountRepository.selectAccountByIdx(accountIdx);
     return account.updatedAt;
-  }
-
-  async getHidden(accountIdx: number): Promise<IsHiddenEntity> {
-    const account = await this.accountRepository.selectAccountByIdx(accountIdx);
-    return IsHiddenEntity.createDto(account);
   }
 
   async changeHidden(accountIdx: number): Promise<void> {
