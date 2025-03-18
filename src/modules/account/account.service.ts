@@ -5,6 +5,7 @@ import { NoUserException } from './exception/no-user.exception';
 import { User } from '../auth/model/user.model';
 import { Account } from '@prisma/client';
 import { AccountPickEntity } from './entity/AccountPick.entity';
+import { IsHiddenEntity } from './entity/IsHidden.Entity';
 
 @Injectable()
 export class AccountService {
@@ -28,10 +29,11 @@ export class AccountService {
     return account.updatedAt;
   }
 
-  async getHidden(accountIdx: number): Promise<number> {
+  async getHidden(accountIdx: number): Promise<IsHiddenEntity> {
     const account = await this.accountRepository.selectAccountByIdx(accountIdx);
-    return account.isHidden;
+    return IsHiddenEntity.createDto(account);
   }
+
   async changeHidden(accountIdx: number): Promise<void> {
     const account = await this.accountRepository.selectAccountByIdx(accountIdx);
     await this.accountRepository.updateHidden(
