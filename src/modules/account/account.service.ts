@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { GetSdvxIdDto } from './dto/request/get-sdvx-id.dto';
 import { AccountRepository } from './repository/account.repository';
 import { NoUserException } from './exception/no-user.exception';
-import { User } from '../auth/model/user.model';
-import { Account } from '@prisma/client';
 import { AccountPickEntity } from './entity/AccountPick.entity';
-import { IsHiddenEntity } from './entity/IsHidden.Entity';
+import { IsHiddenEntity } from './entity/IsHidden.entity';
 
 @Injectable()
 export class AccountService {
