@@ -1,5 +1,4 @@
-import { AccountPickEntity } from '../../entity/AccountPick.entity';
-import { IsHiddenEntity } from '../../entity/IsHidden.Entity';
+import { IsHiddenEntity } from '../../entity/IsHidden.entity';
 
 export class IstHiddenResponseDto {
   data: IsHiddenEntity;
