@@ -50,6 +50,8 @@ export class CommonService {
       clearRank = 1;
     } else if (rank === 4) {
       clearRank = 0.5;
+    } else if (rank === 5) {
+      clearRank = 1.04;
     }
 
     return clearRank;
@@ -63,6 +65,8 @@ export class CommonService {
       return 2;
     } else if (rank === 'comp') {
       return 3;
+    } else if (rank === 'comp_max') {
+      return 5;
     } else {
       return 4;
     }
@@ -76,6 +80,8 @@ export class CommonService {
       return 'comp_ex';
     } else if (rankIdx === 3) {
       return 'comp';
+    } else if (rankIdx === 5) {
+      return 'comp_max';
     } else {
       return 'play';
     }
