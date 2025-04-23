@@ -7,6 +7,8 @@ export function getClearRank(rankIdx: number): string {
     return 'ex';
   } else if (rankIdx === 3) {
     return 'comp';
+  } else if (rankIdx == 5) {
+    return 'max';
   } else {
     return 'play';
   }
