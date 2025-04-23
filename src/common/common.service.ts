@@ -45,13 +45,13 @@ export class CommonService {
     } else if (rank === 1) {
       clearRank = 1.05;
     } else if (rank === 2) {
-      clearRank = 1.02;
-    } else if (rank === 3) {
-      clearRank = 1;
-    } else if (rank === 4) {
-      clearRank = 0.5;
-    } else if (rank === 5) {
       clearRank = 1.04;
+    } else if (rank === 3) {
+      clearRank = 1.02;
+    } else if (rank === 4) {
+      clearRank = 1;
+    } else if (rank === 5) {
+      clearRank = 0.5;
     }
 
     return clearRank;
@@ -61,14 +61,14 @@ export class CommonService {
       return 0;
     } else if (rank === 'uc') {
       return 1;
-    } else if (rank === 'comp_ex') {
-      return 2;
-    } else if (rank === 'comp') {
-      return 3;
     } else if (rank === 'comp_max') {
-      return 5;
-    } else {
+      return 2;
+    } else if (rank === 'comp_ex') {
+      return 3;
+    } else if (rank === 'comp') {
       return 4;
+    } else {
+      return 5;
     }
   }
   getRank(rankIdx: number): string {
@@ -77,11 +77,11 @@ export class CommonService {
     } else if (rankIdx === 1) {
       return 'uc';
     } else if (rankIdx === 2) {
-      return 'comp_ex';
-    } else if (rankIdx === 3) {
-      return 'comp';
-    } else if (rankIdx === 5) {
       return 'comp_max';
+    } else if (rankIdx === 3) {
+      return 'comp_ex';
+    } else if (rankIdx === 4) {
+      return 'comp';
     } else {
       return 'play';
     }

@@ -88,6 +88,12 @@ export const metaData = {
       color: 16737686,
     },
     {
+      rankName: 'Max-Comp',
+      rankFilterName: 'M',
+      rankShortName: 'M',
+      color: 16777215,
+    },
+    {
       rankName: 'EX-Comp',
       rankShortName: 'E',
       color: 10694850,
