@@ -75,6 +75,11 @@ export const metaData = {
       typeShortName: 'xcd',
       color: 1351423,
     },
+    {
+      typeName: 'ultimate',
+      typeShortName: 'ult',
+      color: 16768343,
+    },
   ],
   rank: [
     {
@@ -91,7 +96,7 @@ export const metaData = {
       rankName: 'Max-Comp',
       rankFilterName: 'M',
       rankShortName: 'M',
-      color: 16777215,
+      color: 9013641,
     },
     {
       rankName: 'EX-Comp',
