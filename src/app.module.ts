@@ -9,6 +9,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TagModule } from './modules/tag/tag.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AwsModule } from './aws/aws.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    AwsModule,
     AuthModule,
     HealthcheckModule,
     ChartModule,
