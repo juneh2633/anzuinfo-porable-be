@@ -84,12 +84,14 @@ export const metaData = {
   rank: [
     {
       rankName: 'PUC',
-      rankShortName: 'P',
-      color: 16776806,
+      rankFilterName: 'PUC',
+      rankShortName: 'PUC',
+      color: 4295116,
     },
     {
       rankName: 'UC',
-      rankShortName: 'U',
+      rankFilterName: 'UC',
+      rankShortName: 'UC',
       color: 16737686,
     },
     {
@@ -100,21 +102,25 @@ export const metaData = {
     },
     {
       rankName: 'EX-Comp',
-      rankShortName: 'E',
+      rankFilterName: 'EX',
+      rankShortName: 'EX',
       color: 10694850,
     },
     {
       rankName: 'Complete',
+      rankFilterName: 'Comp',
       rankShortName: 'C',
       color: 7206315,
     },
     {
       rankName: 'Played',
+      rankFilterName: 'Played',
       rankShortName: 'P',
       color: 14737632,
     },
     {
       rankName: 'Not Played',
+      rankFilterName: 'Not\nPlayed',
       rankShortName: '',
       color: 14737632,
     },

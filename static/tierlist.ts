@@ -1,7 +1,7 @@
 export const tierlist = {
   data: [
     {
-      'partIdx:': 1,
+      partIdx: 1,
       partName: 'partA',
       description: 'BT와 FX의 복합적인 노트 패턴 위주',
       tierList: [
@@ -854,7 +854,7 @@ export const tierlist = {
       ],
     },
     {
-      'partIdx:': 2,
+      partIdx: 2,
       partName: 'partB',
       description: '노트 체급이 부족하다면 처리가 힘든 패턴 위주',
       tierList: [
@@ -1486,7 +1486,7 @@ export const tierlist = {
       ],
     },
     {
-      'partIdx:': 3,
+      partIdx: 3,
       partName: 'partC',
       description: '패턴 해석력이 부족하다면 초견에 대처하기 힘든 패턴 위주',
       tierList: [

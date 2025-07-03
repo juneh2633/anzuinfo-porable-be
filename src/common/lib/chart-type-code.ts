@@ -8,4 +8,5 @@ export enum ChartTypeCode {
   heavenly = 7,
   vivid = 8,
   exceed = 9,
+  ultimate = 10,
 }
