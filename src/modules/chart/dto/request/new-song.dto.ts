@@ -6,6 +6,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 
 class RadarDto {
@@ -33,18 +34,45 @@ class DifficultyDto {
   @Type(() => Number)
   @IsNumber()
   level: number;
-  @IsString() type: string;
-  @IsString() imagePath: string;
-  @IsString() columnPath: string;
-  @IsString() effectorName: string;
-  @IsString() illustratorName: string;
-  @IsString() max_exscore: string;
-  @IsObject() radar: RadarDto;
-  @IsString() jacketArtPath: string;
-  @IsString() max_chain: string;
-  @IsString() chip_count: string;
-  @IsString() hold_count: string;
-  @IsString() tsumami_count: string;
+
+  @IsString()
+  type: string;
+
+  @IsOptional()
+  @IsString()
+  imagePath: string;
+
+  @IsOptional()
+  @IsString()
+  columnPath: string;
+
+  @IsString()
+  effectorName: string;
+
+  @IsString()
+  illustratorName: string;
+
+  @IsString()
+  max_exscore: string;
+
+  @ValidateNested()
+  @Type(() => RadarDto) // ✅ 중요: 중첩 객체의 타입 선언
+  radar: RadarDto;
+
+  @IsString()
+  jacketArtPath: string;
+
+  @IsString()
+  max_chain: string;
+
+  @IsString()
+  chip_count: string;
+
+  @IsString()
+  hold_count: string;
+
+  @IsString()
+  tsumami_count: string;
 }
 
 export class NewSongDto {
