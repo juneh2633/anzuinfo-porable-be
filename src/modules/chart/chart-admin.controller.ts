@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Post,
+  Put,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -10,6 +11,7 @@ import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfigProvider } from 'src/aws/config/multer.config';
 import { SongWithDifficultyDto } from './dto/request/song-with-difficulty.dto';
+import { NewChartDto } from './dto/request/new-chart.dto';
 
 @Controller('admin')
 export class ChartAdminController {
@@ -30,7 +32,14 @@ export class ChartAdminController {
   }
 
   @Post('/chart')
-  async createChart() {
+  async addChart(@Body() newChartDto: NewChartDto) {
+    await this.chartAdminService.uploadChartOne(newChartDto);
     return new SuccessResponseDto();
   }
+
+  // @Put('/chart')
+  // async updateChart(@Body() newChartDto: NewChartDto) {
+  //   await this.chartAdminService.uploadChartOne(newChartDto);
+  //   return new SuccessResponseDto();
+  // }
 }

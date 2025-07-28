@@ -6,6 +6,8 @@ import { SongRepository } from './repository/song.repository';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import axios from 'axios';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { NewChartDto } from './dto/request/new-chart.dto';
+import { getTypeCode } from 'src/common/util/getTypeCode';
 
 @Injectable()
 export class ChartAdminService {
@@ -56,5 +58,32 @@ export class ChartAdminService {
         console.log(`❌ Failed to migrate chart idx ${chart.idx}`, err);
       }
     }
+  }
+
+  async uploadChartOne(newChartDto: NewChartDto) {
+    const { songIdx, level, type, effectorName, illustratorName } = newChartDto;
+    const song = await this.songRepository.selectSongByIdx(songIdx);
+    if (!song) {
+      throw new NotFoundException('존재하지 않는 곡입니다.');
+    }
+    const chart = await this.chartRepository.selectChartBySongIdx(songIdx);
+    let jacket;
+    for (const c of chart) {
+      if (c.level === level && c.type === type) {
+        throw new NotFoundException('이미 존재하는 차트입니다.');
+      }
+      jacket = c.jacket;
+    }
+    let typeIdx = getTypeCode(type);
+
+    await this.chartRepository.insertChartBySongIdx(
+      songIdx,
+      level,
+      type,
+      typeIdx,
+      effectorName,
+      illustratorName,
+      jacket,
+    );
   }
 }

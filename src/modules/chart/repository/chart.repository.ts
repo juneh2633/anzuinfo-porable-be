@@ -46,7 +46,45 @@ export class ChartRepository {
   async selectChartAll(): Promise<Chart[]> {
     return await this.prismaService.chart.findMany({});
   }
+
   async setChartIdx(idxWithLevel: string, typeAndTitle: string): Promise<void> {
     await this.redisService.set(typeAndTitle, idxWithLevel);
+  }
+
+  async insertChartBySongIdx(
+    songIdx: number,
+    level: number,
+    type: string,
+    typeIdx: number,
+    effectorName: string,
+    illustratorName: string,
+    jacket: string,
+  ): Promise<void> {
+    await this.prismaService.chart.create({
+      data: {
+        songIdx: songIdx,
+        level: level,
+        type: type,
+        effector: effectorName,
+        illustrator: illustratorName,
+        jacket: jacket,
+        radar: {
+          create: {
+            notes: 0,
+            peak: 0,
+            tsumami: 0,
+            tricky: 0,
+            handtrip: 0,
+            onehand: 0,
+          },
+        },
+        maxExscore: 0,
+        maxChain: 0,
+        chipCount: 0,
+        holdCount: 0,
+        tsumamiCount: 0,
+        typeIdx: typeIdx,
+      },
+    });
   }
 }
