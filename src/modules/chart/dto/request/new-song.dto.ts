@@ -15,7 +15,7 @@ class RadarDto {
   notes: number;
   @Type(() => Number)
   @IsNumber()
-  peak: number;
+  peak: number; ////
   @Type(() => Number)
   @IsNumber()
   tsumami: number;
