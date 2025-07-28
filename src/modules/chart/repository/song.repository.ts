@@ -25,9 +25,15 @@ export class SongRepository {
     return songList;
   }
 
-  // async selectSongAll(): Promise<Song[]> {
-  //   return this.prismaService.song.findMany({});
-  // }
+  async selectSongByIdx(idx: number): Promise<Song | null> {
+    const song = await this.prismaService.song.findFirst({
+      where: {
+        idx: idx,
+      },
+    });
+    return song;
+  }
+
   async selectSongAll(): Promise<SongWithChartWithRadar[]> {
     return this.prismaService.song.findMany({
       include: {
