@@ -10,8 +10,8 @@ import { ChartAdminService } from './chart-admin.service';
 import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfigProvider } from 'src/aws/config/multer.config';
-import { SongWithDifficultyDto } from './dto/request/song-with-difficulty.dto';
 import { NewChartDto } from './dto/request/new-chart.dto';
+import { SongIdxWithTypeDto } from './dto/request/songIdx-with-type.dto';
 
 @Controller('admin')
 export class ChartAdminController {
@@ -20,9 +20,10 @@ export class ChartAdminController {
   @Post('/jacket')
   @UseInterceptors(FileInterceptor('image', multerConfigProvider('img')))
   async createJacket(
-    @Body() songWithDifficultyDto: SongWithDifficultyDto,
+    @Body() songIdxWithTypeDto: SongIdxWithTypeDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    await this.chartAdminService.uploadJacketOne(songIdxWithTypeDto, file);
     return new SuccessResponseDto();
   }
 
