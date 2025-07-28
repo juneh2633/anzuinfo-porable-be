@@ -8,6 +8,7 @@ import axios from 'axios';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NewChartDto } from './dto/request/new-chart.dto';
 import { getTypeCode } from 'src/common/util/getTypeCode';
+import { SongIdxWithTypeDto } from './dto/request/songIdx-with-type.dto';
 
 @Injectable()
 export class ChartAdminService {
@@ -59,8 +60,21 @@ export class ChartAdminService {
       }
     }
   }
-
-  async uploadChartOne(newChartDto: NewChartDto) {
+  async uploadJacketOne(
+    songIdxWithTypeDto: SongIdxWithTypeDto,
+    file: Express.Multer.File,
+  ): Promise<void> {
+    const key = `${songIdxWithTypeDto.songIdx}_${songIdxWithTypeDto.type ?? 'unknown'}.jpg`;
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: 'image/jpeg',
+      }),
+    );
+  }
+  async uploadChartOne(newChartDto: NewChartDto): Promise<void> {
     const { songIdx, level, type, effectorName, illustratorName } = newChartDto;
     const song = await this.songRepository.selectSongByIdx(songIdx);
     if (!song) {
