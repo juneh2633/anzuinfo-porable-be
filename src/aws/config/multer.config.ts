@@ -22,7 +22,7 @@ export const multerConfigProvider = (
   const mimeType = [];
 
   if (fileType === 'img') {
-    mimeType.push(...['image/jpg', 'image/png']);
+    mimeType.push(...['image/jpg', 'image/png', 'image/jpeg']);
   }
 
   return {

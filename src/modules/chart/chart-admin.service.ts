@@ -9,6 +9,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NewChartDto } from './dto/request/new-chart.dto';
 import { getTypeCode } from 'src/common/util/getTypeCode';
 import { SongIdxWithTypeDto } from './dto/request/songIdx-with-type.dto';
+import { NewSongDto } from './dto/request/new-song.dto';
 
 @Injectable()
 export class ChartAdminService {
@@ -60,11 +61,16 @@ export class ChartAdminService {
       }
     }
   }
+
+  async uploadSong(newSongDto: NewSongDto): Promise<void> {
+    await this.songRepository.upsertSongData(newSongDto);
+  }
+
   async uploadJacketOne(
     songIdxWithTypeDto: SongIdxWithTypeDto,
     file: Express.Multer.File,
   ): Promise<void> {
-    const key = `${songIdxWithTypeDto.songIdx}_${songIdxWithTypeDto.type ?? 'unknown'}.jpg`;
+    const key = `${songIdxWithTypeDto.songIdx}_${songIdxWithTypeDto.type}.jpg`;
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
@@ -74,14 +80,18 @@ export class ChartAdminService {
       }),
     );
   }
+
   async uploadChartOne(newChartDto: NewChartDto): Promise<void> {
     const { songIdx, level, type, effectorName, illustratorName } = newChartDto;
     const song = await this.songRepository.selectSongByIdx(songIdx);
+
     if (!song) {
       throw new NotFoundException('존재하지 않는 곡입니다.');
     }
+
     const chart = await this.chartRepository.selectChartBySongIdx(songIdx);
     let jacket;
+
     for (const c of chart) {
       if (c.level === level && c.type === type) {
         throw new NotFoundException('이미 존재하는 차트입니다.');

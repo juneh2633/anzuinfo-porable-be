@@ -56,7 +56,7 @@ class DifficultyDto {
   max_exscore: string;
 
   @ValidateNested()
-  @Type(() => RadarDto) // ✅ 중요: 중첩 객체의 타입 선언
+  @Type(() => RadarDto)
   radar: RadarDto;
 
   @IsString()

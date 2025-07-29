@@ -67,7 +67,8 @@ export class ChartRepository {
         type: type,
         effector: effectorName,
         illustrator: illustratorName,
-        jacket: jacket,
+        jacket:
+          'https://anzuinfo.s3.ap-northeast-2.amazonaws.com/0_maximum.jpg',
         radar: {
           create: {
             notes: 0,
