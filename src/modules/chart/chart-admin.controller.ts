@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Post,
@@ -12,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfigProvider } from 'src/aws/config/multer.config';
 import { NewChartDto } from './dto/request/new-chart.dto';
 import { SongIdxWithTypeDto } from './dto/request/songIdx-with-type.dto';
+import { NewSongDto } from './dto/request/new-song.dto';
 
 @Controller('admin')
 export class ChartAdminController {
@@ -23,17 +25,21 @@ export class ChartAdminController {
     @Body() songIdxWithTypeDto: SongIdxWithTypeDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    if (!file) {
+      throw new BadRequestException();
+    }
     await this.chartAdminService.uploadJacketOne(songIdxWithTypeDto, file);
     return new SuccessResponseDto();
   }
 
   @Post('/song')
-  async createSong() {
+  async createSong(@Body() newSongDto: NewSongDto) {
+    await this.chartAdminService.uploadSong(newSongDto);
     return new SuccessResponseDto();
   }
 
   @Post('/chart')
-  async addChart(@Body() newChartDto: NewChartDto) {
+  async createChart(@Body() newChartDto: NewChartDto) {
     await this.chartAdminService.uploadChartOne(newChartDto);
     return new SuccessResponseDto();
   }
