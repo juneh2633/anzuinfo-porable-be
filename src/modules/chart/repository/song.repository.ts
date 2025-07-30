@@ -5,6 +5,8 @@ import { SongWithChartWithRadar } from '../model/SongWithChartWithRadar';
 import { RedisService } from 'src/common/redis/redis.service';
 import { SongWithChartEntity } from '../entity/SongWithChart.entity';
 import { metaData } from 'src/common/lib/meta-data';
+import { NewSongDto } from '../dto/request/new-song.dto';
+import { getTypeCode } from 'src/common/util/getTypeCode';
 
 @Injectable()
 export class SongRepository {
@@ -70,7 +72,7 @@ export class SongRepository {
     return JSON.parse(serializedData);
   }
 
-  async upsertSongData(song): Promise<void> {
+  async upsertSongData(song: NewSongDto): Promise<void> {
     const genresMap = {
       BEMANI: 1,
       ボーカロイド: 2,
@@ -82,20 +84,6 @@ export class SongRepository {
       'POPS&アニメ': 8,
       その他: 9,
     };
-    function getTypeIdx(type) {
-      const typeMap = {
-        novice: 1,
-        advanced: 2,
-        exhaust: 3,
-        maximum: 4,
-        infinite: 5,
-        gravity: 6,
-        heavenly: 7,
-        vivid: 8,
-        exceed: 9,
-      };
-      return typeMap[type] || null; // Return null if the type is not in the map
-    }
 
     const createdSong = await this.prismaService.song.upsert({
       where: { idx: parseInt(song.songid, 10) },
@@ -103,10 +91,10 @@ export class SongRepository {
         title: song.title,
         artist: song.artist,
         ascii: song.ascii,
-        asciiTitle: song.ascii_title,
-        asciiArtist: song.ascii_artist,
-        titleYomigana: song.title_yomigana,
-        artistYomigana: song.artist_yomigana,
+        asciiTitle: song.title,
+        asciiArtist: song.artist,
+        titleYomigana: song.title,
+        artistYomigana: song.artist,
         version: parseInt(song.version, 10),
         bpm: song.bpm,
         date: new Date(`${song.date}T00:00:00Z`),
@@ -119,10 +107,10 @@ export class SongRepository {
         title: song.title,
         artist: song.artist,
         ascii: song.ascii,
-        asciiTitle: song.ascii_title,
-        asciiArtist: song.ascii_artist,
-        titleYomigana: song.title_yomigana,
-        artistYomigana: song.artist_yomigana,
+        asciiTitle: song.title,
+        asciiArtist: song.artist,
+        titleYomigana: song.title,
+        artistYomigana: song.artist,
         version: parseInt(song.version, 10),
         bpm: song.bpm,
         date: new Date(`${song.date}T00:00:00Z`),
@@ -133,24 +121,26 @@ export class SongRepository {
           create: song.difficulties.map((difficulty) => ({
             level: difficulty.level,
             type: difficulty.type,
-            typeIdx: getTypeIdx(difficulty.type),
-            jacket: difficulty.jacketArtPath,
+            typeIdx: getTypeCode(difficulty.type),
+            jacket:
+              difficulty.jacketArtPath ??
+              'https://anzuinfo.s3.ap-northeast-2.amazonaws.com/0_maximum.jpg',
             effector: difficulty.effectorName,
             illustrator: difficulty.illustratorName,
-            maxExscore: parseInt(difficulty.max_exscore, 10),
-            maxChain: parseInt(difficulty.max_chain, 10),
-            chipCount: parseInt(difficulty.chip_count, 10),
-            holdCount: parseInt(difficulty.hold_count, 10),
-            tsumamiCount: parseInt(difficulty.tsumami_count, 10),
+            maxExscore: parseInt(difficulty.max_exscore, 10) ?? 0,
+            maxChain: parseInt(difficulty.max_chain, 10) ?? 0,
+            chipCount: parseInt(difficulty.chip_count, 10) ?? 0,
+            holdCount: parseInt(difficulty.hold_count, 10) ?? 0,
+            tsumamiCount: parseInt(difficulty.tsumami_count, 10) ?? 0,
             deletedAt: null,
             radar: {
               create: {
-                notes: difficulty.radar.notes,
-                peak: difficulty.radar.peak,
-                tsumami: difficulty.radar.tsumami,
-                tricky: difficulty.radar.tricky,
-                handtrip: difficulty.radar.handtrip,
-                onehand: difficulty.radar.onehand,
+                notes: difficulty.radar.notes ?? 0,
+                peak: difficulty.radar.peak ?? 0,
+                tsumami: difficulty.radar.tsumami ?? 0,
+                tricky: difficulty.radar.tricky ?? 0,
+                handtrip: difficulty.radar.handtrip ?? 0,
+                onehand: difficulty.radar.onehand ?? 0,
               },
             },
           })),

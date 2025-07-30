@@ -63,6 +63,7 @@ export class ChartAdminService {
   }
 
   async uploadSong(newSongDto: NewSongDto): Promise<void> {
+    console.log(newSongDto);
     await this.songRepository.upsertSongData(newSongDto);
   }
 

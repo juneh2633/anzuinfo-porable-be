@@ -26,7 +26,7 @@ import { AccountIdxDto } from './dto/request/account-idx.dto';
 @ApiTags('Playdata API')
 @Controller('playdata')
 export class PlaydataController {
-  constructor(private readonly playdataService: PlaydataService) {};
+  constructor(private readonly playdataService: PlaydataService) {}
 
   // /**
   //  * 갱신코드 데이터 받는 api

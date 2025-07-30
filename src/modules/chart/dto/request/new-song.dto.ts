@@ -80,10 +80,6 @@ export class NewSongDto {
   @IsString() title: string;
   @IsString() artist: string;
   @IsString() ascii: string;
-  @IsString() ascii_title: string;
-  @IsString() ascii_artist: string;
-  @IsString() title_yomigana: string;
-  @IsString() artist_yomigana: string;
   @IsString() version: string;
   @IsString() bpm: string;
   @IsArray() @IsString({ each: true }) genres: string[];
