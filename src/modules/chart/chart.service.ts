@@ -41,7 +41,8 @@ export class ChartService {
         data.type !== 'novice' &&
         data.type !== 'advanced' &&
         data.type !== 'exhaust' &&
-        data.type !== 'maximum'
+        data.type !== 'maximum' &&
+        data.type !== 'ultimate'
       ) {
         data.type = 'infinite';
       }
