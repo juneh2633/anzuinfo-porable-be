@@ -37,7 +37,7 @@ export class ChartController {
    */
   @Get('/meta')
   @ExceptionList([new NoChartException()])
-  async getSongALl(): Promise<MetaResponseDto> {
+  async getSongAll(): Promise<MetaResponseDto> {
     const data = await this.chartService.findSongAllByRedis();
     return data;
   }
@@ -83,16 +83,5 @@ export class ChartController {
   async getChartByIdx(@Param('chartIdx', ParseIntPipe) chartIdx: number) {
     const chart = await this.chartService.findChartByIdx(chartIdx);
     return ChartResponseDto.createResponse(chart);
-  }
-
-  /**
-   * 곡 추가
-   */
-  @Post('/song')
-  @AuthCheck(2)
-  @ExceptionList([new NoChartException()])
-  async setSong(): Promise<SuccessResponseDto> {
-    await this.chartService.insertSong();
-    return new SuccessResponseDto();
   }
 }

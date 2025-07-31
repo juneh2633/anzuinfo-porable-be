@@ -78,7 +78,7 @@ export class ChartAdminService {
         Key: key,
         Body: file.buffer,
         ContentType: 'image/jpeg',
-      }),
+      }), //100–140
     );
   }
 

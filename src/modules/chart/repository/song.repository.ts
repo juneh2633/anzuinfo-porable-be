@@ -7,6 +7,7 @@ import { SongWithChartEntity } from '../entity/SongWithChart.entity';
 import { metaData } from 'src/common/lib/meta-data';
 import { NewSongDto } from '../dto/request/new-song.dto';
 import { getTypeCode } from 'src/common/util/getTypeCode';
+import { startWith } from 'rxjs';
 
 @Injectable()
 export class SongRepository {
@@ -49,6 +50,18 @@ export class SongRepository {
         idx: 'asc',
       },
     });
+  }
+
+  async selectSongByKeyword(key: string): Promise<Song[] | null> {
+    const songList = await this.prismaService.song.findMany({
+      where: {
+        title: {
+          contains: key,
+          mode: 'insensitive',
+        },
+      },
+    });
+    return songList;
   }
 
   async setDataVersion(version: string): Promise<void> {
