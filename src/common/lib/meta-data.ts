@@ -17,7 +17,7 @@ export const metaData = {
       color: 16421125,
     },
     {
-      versionName: 'Heavenly Haven',
+      versionName: 'Heavenly Haven', 
       color: 45296,
     },
     {
