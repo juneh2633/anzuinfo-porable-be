@@ -220,4 +220,11 @@ export class PlaydataController {
     const data = this.playdataService.getTierlist();
     return data;
   }
+
+
+  @Get('/test')
+  @ExceptionList([])
+  async test():Promise<any>{
+    return await this.playdataService.getPlaydataAllByRedis(1);
+  }
 }
