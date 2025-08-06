@@ -25,7 +25,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
     }),
   );
@@ -41,6 +41,7 @@ async function bootstrap() {
     origin: [
       'https://p.eagate.573.jp',
       'http://localhost:3000',
+      'http://localhost:3001',
       'https://juneh2633.ddns.net',
     ],
     methods: 'GET,POST',

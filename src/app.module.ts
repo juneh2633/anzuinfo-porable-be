@@ -8,6 +8,7 @@ import { AccountModule } from './modules/account/account.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TagModule } from './modules/tag/tag.module';
+import { TierModule } from './modules/tier/tier.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AwsModule } from './aws/aws.module';
 
@@ -28,6 +29,7 @@ import { AwsModule } from './aws/aws.module';
     PlaydataModule,
     AccountModule,
     TagModule,
+    TierModule,
     ScheduleModule.forRoot(),
   ],
   providers: [],
