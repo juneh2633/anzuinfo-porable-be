@@ -59,6 +59,14 @@ export class ChartRepository {
     effectorName: string,
     illustratorName: string,
     jacket: string,
+    radar: {
+      notes: number;
+      peak: number;
+      tsumami: number;
+      tricky: number;
+      handtrip: number;
+      onehand: number;
+    },
   ): Promise<void> {
     await this.prismaService.chart.create({
       data: {
@@ -68,15 +76,16 @@ export class ChartRepository {
         effector: effectorName,
         illustrator: illustratorName,
         jacket:
+          jacket ??
           'https://anzuinfo.s3.ap-northeast-2.amazonaws.com/0_maximum.jpg',
         radar: {
           create: {
-            notes: 0,
-            peak: 0,
-            tsumami: 0,
-            tricky: 0,
-            handtrip: 0,
-            onehand: 0,
+            notes: radar.notes,
+            peak: radar.peak,
+            tsumami: radar.tsumami,
+            tricky: radar.tricky,
+            handtrip: radar.handtrip,
+            onehand: radar.onehand,
           },
         },
         maxExscore: 0,
@@ -85,6 +94,54 @@ export class ChartRepository {
         holdCount: 0,
         tsumamiCount: 0,
         typeIdx: typeIdx,
+      },
+    });
+  }
+
+  async updateChartByChartIdx(
+    chartIdx: number,
+    songIdx: number,
+    level: number,
+    type: string,
+    typeIdx: number,
+    effectorName: string,
+    illustratorName: string,
+    radar: {
+      notes: number;
+      peak: number;
+      tsumami: number;
+      tricky: number;
+      handtrip: number;
+      onehand: number;
+    },
+  ): Promise<void> {
+    // 먼저 차트 정보 업데이트
+    await this.prismaService.chart.update({
+      where: {
+        idx: chartIdx,
+      },
+      data: {
+        songIdx: songIdx,
+        level: level,
+        type: type,
+        effector: effectorName,
+        illustrator: illustratorName,
+        typeIdx: typeIdx,
+      },
+    });
+
+    // radar 정보 업데이트 (chartIdx로 직접 업데이트)
+    await this.prismaService.radar.updateMany({
+      where: {
+        chartIdx: chartIdx,
+      },
+      data: {
+        notes: radar.notes,
+        peak: radar.peak,
+        tsumami: radar.tsumami,
+        tricky: radar.tricky,
+        handtrip: radar.handtrip,
+        onehand: radar.onehand,
       },
     });
   }

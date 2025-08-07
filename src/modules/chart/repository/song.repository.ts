@@ -103,7 +103,7 @@ export class SongRepository {
       update: {
         title: song.title,
         artist: song.artist,
-        ascii: song.ascii,
+        ascii: song.title,
         asciiTitle: song.title,
         asciiArtist: song.artist,
         titleYomigana: song.title,
@@ -119,7 +119,7 @@ export class SongRepository {
         idx: parseInt(song.songid, 10),
         title: song.title,
         artist: song.artist,
-        ascii: song.ascii,
+        ascii: song.title,
         asciiTitle: song.title,
         asciiArtist: song.artist,
         titleYomigana: song.title,
@@ -136,7 +136,6 @@ export class SongRepository {
             type: difficulty.type,
             typeIdx: getTypeCode(difficulty.type),
             jacket:
-              difficulty.jacketArtPath ??
               'https://anzuinfo.s3.ap-northeast-2.amazonaws.com/0_maximum.jpg',
             effector: difficulty.effectorName,
             illustrator: difficulty.illustratorName,
@@ -163,6 +162,17 @@ export class SongRepository {
             genreIdx: genresMap[genre],
           })),
         },
+      },
+    });
+  }
+
+  async selectGreatestIdx() {
+    return await this.prismaService.song.findFirst({
+      select: {
+        idx: true,
+      },
+      orderBy: {
+        idx: 'desc',
       },
     });
   }

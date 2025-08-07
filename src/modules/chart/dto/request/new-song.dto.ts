@@ -38,14 +38,6 @@ class DifficultyDto {
   @IsString()
   type: string;
 
-  @IsOptional()
-  @IsString()
-  imagePath: string;
-
-  @IsOptional()
-  @IsString()
-  columnPath: string;
-
   @IsString()
   effectorName: string;
 
@@ -59,8 +51,6 @@ class DifficultyDto {
   @Type(() => RadarDto)
   radar: RadarDto;
 
-  @IsString()
-  jacketArtPath: string;
 
   @IsString()
   max_chain: string;
@@ -79,7 +69,6 @@ export class NewSongDto {
   @IsString() songid: string;
   @IsString() title: string;
   @IsString() artist: string;
-  @IsString() ascii: string;
   @IsString() version: string;
   @IsString() bpm: string;
   @IsArray() @IsString({ each: true }) genres: string[];
