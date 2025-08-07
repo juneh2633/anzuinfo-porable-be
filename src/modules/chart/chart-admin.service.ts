@@ -14,16 +14,11 @@ import { NewSongDto } from './dto/request/new-song.dto';
 import { UpdateChartDto } from './dto/request/update-chart.dto';
 import { GreatestSongIdxEntity } from './entity/GreatestSongIdx.entity';
 import * as crypto from 'crypto';
+import awsConfig from '../../aws/config/aws.config';
 
 @Injectable()
 export class ChartAdminService {
-  private readonly s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESSKEYID,
-      secretAccessKey: process.env.AWS_SECRETACCESSKEY,
-    },
-  });
+  private readonly s3 = new S3Client(awsConfig().aws);
   private readonly bucket = process.env.AWS_BUCKET;
   constructor(
     private readonly chartRepository: ChartRepository,
@@ -33,6 +28,13 @@ export class ChartAdminService {
   ) {}
 
   async uploadJacketAll() {
+    if (!this.bucket) {
+      throw new Error('AWS_BUCKET environment variable is required');
+    }
+    if (!process.env.AWS_REGION) {
+      throw new Error('AWS_REGION environment variable is required');
+    }
+    
     const chartList = await this.chartRepository.selectChartAll();
 
     for (const chart of chartList) {

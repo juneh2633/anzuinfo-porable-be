@@ -18,6 +18,13 @@ export class AwsService {
     const name = uuidv4();
     const bucketName = process.env.AWS_BUCKET;
     const region = process.env.AWS_REGION;
+    
+    if (!bucketName) {
+      throw new BadRequestException('AWS_BUCKET environment variable is required');
+    }
+    if (!region) {
+      throw new BadRequestException('AWS_REGION environment variable is required');
+    }
     if (!file.mimetype.startsWith('image/')) {
       throw new BadRequestException('Unsupported file type');
     }

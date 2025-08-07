@@ -7,6 +7,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpErrorFilter } from './common/filter/HttpErrorFilter';
 import * as expressBasicAuth from 'express-basic-auth';
 
+// Load environment variables from .env file
+dotenv.config();
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // const prismaService = app.get(PrismaService);
