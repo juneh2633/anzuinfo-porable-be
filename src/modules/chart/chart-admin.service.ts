@@ -82,7 +82,17 @@ export class ChartAdminService {
         Key: key,
         Body: file.buffer,
         ContentType: 'image/jpeg',
-      }), //100–140
+      }),
+    );
+
+    // S3 URL 생성
+    const s3Url = `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+    // 해당 songIdx와 type에 맞는 chart의 jacket 필드 업데이트
+    await this.chartRepository.updateJacketBySongIdxAndType(
+      parseInt(songIdxWithTypeDto.songIdx),
+      songIdxWithTypeDto.type,
+      s3Url,
     );
   }
 
