@@ -145,4 +145,20 @@ export class ChartRepository {
       },
     });
   }
+
+  async updateJacketBySongIdxAndType(
+    songIdx: number,
+    type: string,
+    jacketUrl: string,
+  ): Promise<void> {
+    await this.prismaService.chart.updateMany({
+      where: {
+        songIdx: songIdx,
+        type: type,
+      },
+      data: {
+        jacket: jacketUrl,
+      },
+    });
+  }
 }
