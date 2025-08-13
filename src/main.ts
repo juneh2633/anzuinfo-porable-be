@@ -17,7 +17,7 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '10mb' }));
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
   app.use(
-    '/api',
+    '/api/docs',
     expressBasicAuth({
       challenge: true,
       users: {
@@ -52,7 +52,7 @@ async function bootstrap() {
   });
   const document = SwaggerModule.createDocument(app, config);
 
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(3000);
 }
