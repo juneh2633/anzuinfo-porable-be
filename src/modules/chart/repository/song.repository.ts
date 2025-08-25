@@ -44,6 +44,9 @@ export class SongRepository {
           include: {
             radar: true,
           },
+          orderBy:{ 
+            idx: 'asc' 
+          }
         },
       },
       orderBy: {
