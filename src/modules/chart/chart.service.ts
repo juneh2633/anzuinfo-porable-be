@@ -10,6 +10,10 @@ import { SongRepository } from './repository/song.repository';
 import { VersionEntity } from './entity/Version.entity';
 
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { RandomChartQueryDto } from './dto/request/random-chart-query.dto';
+import { Chart, Song } from '@prisma/client';
+
+type ChartWithSong = Chart & { song: Song };
 
 @Injectable()
 export class ChartService {
@@ -90,5 +94,100 @@ export class ChartService {
     //   await this.songRepository.upsertSongData(song);
     // });
     // await this.cacheChart();
+  }
+
+  async findRandomChart(
+    query: RandomChartQueryDto,
+  ): Promise<ChartWithSong[]> {
+    const {
+      minLevel = 1,
+      maxLevel = 20,
+      minVersion = 1,
+      maxVersion = 999,
+      count = 1,
+    } = query;
+
+    const candidates = await this.prisma.chart.findMany({
+      where: {
+        level: {
+          gte: minLevel,
+          lte: maxLevel,
+        },
+        deletedAt: null,
+        song: {
+          version: {
+            gte: minVersion,
+            lte: maxVersion,
+          },
+        },
+      },
+      include: {
+        song: true,
+      },
+    });
+
+    if (!candidates.length) {
+      throw new NoChartException();
+    }
+
+    return this.pickRandom(candidates, count);
+  }
+
+  async findRandomMegamixChart(
+    query: RandomChartQueryDto,
+  ): Promise<ChartWithSong[]> {
+    const {
+      minLevel = 1,
+      maxLevel = 20,
+      minVersion = 1,
+      maxVersion = 999,
+      count = 1,
+    } = query;
+
+    const candidates = await this.prisma.chart.findMany({
+      where: {
+        level: {
+          gte: minLevel,
+          lte: maxLevel,
+        },
+        deletedAt: null,
+        song: {
+          version: {
+            gte: minVersion,
+            lte: maxVersion,
+          },
+          // Megamix가 있는 곡만
+          megamix: {
+            some: {},
+          },
+        },
+      },
+      include: {
+        song: true,
+      },
+    });
+
+    if (!candidates.length) {
+      throw new NoChartException();
+    }
+
+    return this.pickRandom(candidates, count);
+  }
+
+  private pickRandom<T>(arr: T[], count: number): T[] {
+    if (arr.length <= count) return arr;
+
+    const result: T[] = [];
+    const used = new Set<number>();
+
+    while (result.length < count) {
+      const i = Math.floor(Math.random() * arr.length);
+      if (!used.has(i)) {
+        used.add(i);
+        result.push(arr[i]);
+      }
+    }
+
+    return result;
   }
 }
