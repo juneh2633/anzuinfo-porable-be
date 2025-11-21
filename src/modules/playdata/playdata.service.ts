@@ -76,6 +76,18 @@ export class PlaydataService {
           chartIdxWithLevel = await this.redisService.get(safeKey);
         }
 
+        if(title === 'カジノファイヤーことみちゃん' && artist === 'covered by 一条莉々華(ReGLOSS)'){
+          if(chartType === 'maximum'){
+            chartIdxWithLevel = '8094@@18'
+          }
+        }
+
+        if(title === '朱と碧のランページ' && artist === 'covered by 儒烏風亭らでん(ReGLOSS)'){
+          if(chartType === 'maximum'){
+            chartIdxWithLevel = '8096@@17'
+          }
+        }
+
         if (chartIdxWithLevel === null) {
           console.log(chartIdxWithLevel, title);
           continue;
