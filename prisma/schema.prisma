@@ -102,7 +102,7 @@ model Song {
   chart          Chart[]
   genre          Genre[]
   tag            Tag[]
-
+  megamix        Megamix[] @relation("SongToMegamix")
   @@map("song")
 }
 
@@ -125,4 +125,15 @@ model Genre {
   song     Song @relation(fields: [songIdx], references: [idx], onDelete: NoAction, onUpdate: NoAction, map: "fk_song_to_genre")
 
   @@map("genre")
+}
+
+
+model Megamix {
+  idx     Int  @id @default(autoincrement())
+  songIdx Int  @map("song_idx")
+  version Int
+
+  song    Song @relation("SongToMegamix", fields: [songIdx], references: [idx], onDelete: NoAction, onUpdate: NoAction, map: "fk_song_to_megamix")
+  @@unique([songIdx, version], map: "uq_megamix_song_version")
+  @@map("megamix")
 }

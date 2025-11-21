@@ -6,9 +6,9 @@
 
 */
 -- AlterTable
-ALTER TABLE "song" DROP CONSTRAINT "song_pkey",
-ALTER COLUMN "idx" DROP DEFAULT;
-DROP SEQUENCE "song_idx_seq";
+ALTER TABLE "song"
+  ALTER COLUMN "idx" DROP DEFAULT;
 
+DROP SEQUENCE IF EXISTS "song_idx_seq";
 -- CreateIndex
 CREATE UNIQUE INDEX "song_idx_key" ON "song"("idx");

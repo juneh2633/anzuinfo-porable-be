@@ -17,6 +17,8 @@ import { NoChartException } from './exception/no-chart.exception';
 import { GetVersionDto } from './dto/request/get-version.dto';
 import { VersionResponseDto } from './dto/response/version.response.dto';
 import { MetaResponseDto } from './dto/response/meta.response.dto';
+import { RandomChartQueryDto } from './dto/request/random-chart-query.dto';
+import { RandomChartResponseDto } from './dto/response/random-chart-response.dto';
 
 @Controller('chart')
 export class ChartController {
@@ -78,10 +80,31 @@ export class ChartController {
   /**
    * idx로 chart 데이터 가저오기
    */
+  @Get('/random')
+  @ExceptionList([new NoChartException()])
+  async getRandomChart(@Query() query: RandomChartQueryDto):Promise<RandomChartResponseDto> {
+    const chart = await this.chartService.findRandomChart(query);
+    return RandomChartResponseDto.from(chart);
+  }
+    /**
+   * idx로 chart 데이터 가저오기
+   */
+  @Get('/random/megamix')
+  @ExceptionList([new NoChartException()])
+  async getRandomMegamixChart(@Query() query: RandomChartQueryDto):Promise<RandomChartResponseDto> {
+    const chart = await this.chartService.findRandomMegamixChart(query);
+    return RandomChartResponseDto.from(chart);
+  }
+
+  /**
+   * idx로 chart 데이터 가저오기
+   */
   @Get('/:chartIdx')
   @ExceptionList([new NoChartException()])
   async getChartByIdx(@Param('chartIdx', ParseIntPipe) chartIdx: number) {
     const chart = await this.chartService.findChartByIdx(chartIdx);
     return ChartResponseDto.createResponse(chart);
   }
+
+
 }
