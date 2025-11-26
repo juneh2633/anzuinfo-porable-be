@@ -190,4 +190,50 @@ export class ChartService {
 
     return result;
   }
+
+
+  async findMegamixChart(
+    query: RandomChartQueryDto,
+  ): Promise<ChartWithSong[]> {
+    const {
+      minLevel = query.minLevel ?? 1,
+      maxLevel = query.maxLevel ?? 20,
+      minVersion = query.minVersion ?? 1,
+      maxVersion = query.maxVersion ?? 6,
+    } = query;
+
+    const candidates = await this.prisma.chart.findMany({
+      where: {
+        level: {
+          gte: minLevel,
+          lte: maxLevel,
+        },
+        deletedAt: null,
+        song: {
+          version: {
+            gte: minVersion,
+            lte: maxVersion,
+          },    
+          // Megamix가 있는 곡만
+          megamix: {
+            some: {},
+          },
+        },
+      },
+      include: {
+        song: true,
+      },
+      orderBy: {
+        song:{
+          date: 'asc',
+        }
+      },
+    });
+
+    if (!candidates.length) {
+      throw new NoChartException();
+    }
+
+    return candidates;
+  }
 }

@@ -78,7 +78,17 @@ export class ChartController {
   }
 
   /**
-   * idx로 chart 데이터 가저오기
+   * megamix 채보 가져오기
+   */
+  @Get("/megamix")
+  @ExceptionList([])
+  async getMegamixChart(@Query() query: RandomChartQueryDto):Promise<RandomChartResponseDto> {
+    const charts =  await this.chartService.findMegamixChart(query);
+    return RandomChartResponseDto.from(charts);
+  }
+
+  /**
+   * 랜덤 차트 가져오기
    */
   @Get('/random')
   @ExceptionList([new NoChartException()])
@@ -87,7 +97,7 @@ export class ChartController {
     return RandomChartResponseDto.from(chart);
   }
     /**
-   * idx로 chart 데이터 가저오기
+   * megamix용 랜덤 차트 가져오기
    */
   @Get('/random/megamix')
   @ExceptionList([new NoChartException()])
