@@ -47,6 +47,7 @@ async function bootstrap() {
       'http://localhost:3001',
       'https://juneh2633.ddns.net',
       'https://anzu-editor.vercel.app',
+      'https://v0-vgc-ochre.vercel.app',
     ],
     methods: 'GET,POST',
     allowedHeaders: 'Content-Type,Authorization',
