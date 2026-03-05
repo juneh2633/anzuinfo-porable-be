@@ -212,6 +212,21 @@ export class PlaydataController {
   }
 
   /**
+   * (관리자) 전체 플레이데이터 볼포스 재계산
+   */
+  @Post('/admin/reprocess-vf')
+  @ExceptionList([new NoPlaydataException()])
+  @AuthCheck(2)
+  async adminReprocessVf(@GetUser() user: User): Promise<any> {
+    const updatedCount = await this.playdataService.recalculateAllVolforce();
+    return {
+      status: 'success',
+      message: `Successfully recalculated Volforce for ${updatedCount} records.`,
+      data: { updatedCount }
+    };
+  }
+
+  /**
    * 경험치표 데이터
    */
   @Get('/tier')

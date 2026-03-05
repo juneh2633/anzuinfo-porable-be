@@ -60,3 +60,10 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Docker dump files (용량이 크고 민감한 데이터 포함)
+docker/dumps/*.dump
+docker/dumps/*.sql
+docker/dumps/*.tar
+docker/dumps/*.backup
+docker/dumps/*.rdb

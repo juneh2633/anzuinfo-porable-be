@@ -30,7 +30,7 @@ model Account {
 model Chart {
   idx          Int        @id @default(autoincrement())
   songIdx      Int        @default(autoincrement()) @map("song_idx")
-  level        Int
+  level        Float
   type         String?    @db.VarChar(255)
   jacket       String?    @db.VarChar(255)
   chartImg     String?    @map("chart_img") @db.VarChar(255)

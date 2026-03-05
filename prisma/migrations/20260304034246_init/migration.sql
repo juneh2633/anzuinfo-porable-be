@@ -1,11 +1,18 @@
 -- CreateTable
 CREATE TABLE "account" (
     "idx" SERIAL NOT NULL,
-    "sdvx_id" VARCHAR(255) NOT NULL,
+    "sdvx_id" VARCHAR(255),
     "pw" VARCHAR(255) NOT NULL,
-    "vf" INTEGER NOT NULL,
-    "play_count" INTEGER NOT NULL,
-    "created_at" TIMESTAMPTZ(6) NOT NULL,
+    "vf" INTEGER,
+    "play_count" INTEGER,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id" VARCHAR(255) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(6),
+    "update_at" TIMESTAMPTZ(6),
+    "player_name" VARCHAR(255),
+    "skill_level" VARCHAR(255),
+    "rankidx" INTEGER DEFAULT 1,
+    "is_hidden" INTEGER DEFAULT 0,
 
     CONSTRAINT "account_pkey" PRIMARY KEY ("idx")
 );
@@ -14,7 +21,7 @@ CREATE TABLE "account" (
 CREATE TABLE "chart" (
     "idx" SERIAL NOT NULL,
     "song_idx" SERIAL NOT NULL,
-    "level" INTEGER NOT NULL,
+    "level" DOUBLE PRECISION NOT NULL,
     "type" VARCHAR(255),
     "jacket" VARCHAR(255),
     "chart_img" VARCHAR(255),
@@ -26,6 +33,7 @@ CREATE TABLE "chart" (
     "hold_count" INTEGER,
     "tsumami_count" INTEGER,
     "deleted_at" TIMESTAMPTZ(6),
+    "type_idx" INTEGER DEFAULT 0,
 
     CONSTRAINT "chart_pkey" PRIMARY KEY ("idx")
 );
@@ -38,12 +46,13 @@ CREATE TABLE "playdata" (
     "chart_vf" INTEGER NOT NULL,
     "rank" INTEGER,
     "play_count" INTEGER,
-    "clear_count" INTEGER NOT NULL,
+    "clear_count" INTEGER,
     "uc_count" INTEGER,
     "puc_count" INTEGER,
     "score" INTEGER NOT NULL,
-    "ex_score" INTEGER NOT NULL,
-    "created_at" TIMESTAMPTZ(6) NOT NULL,
+    "ex_score" INTEGER,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "score_idx" INTEGER,
 
     CONSTRAINT "playdata_pkey" PRIMARY KEY ("idx")
 );
@@ -64,7 +73,7 @@ CREATE TABLE "radar" (
 
 -- CreateTable
 CREATE TABLE "song" (
-    "idx" SERIAL NOT NULL,
+    "idx" INTEGER NOT NULL,
     "title" VARCHAR(255) NOT NULL,
     "artist" VARCHAR(255) NOT NULL,
     "ascii" VARCHAR(255) NOT NULL,
@@ -88,7 +97,7 @@ CREATE TABLE "tag" (
     "account_idx" SERIAL NOT NULL,
     "song_idx" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
-    "created_at" TIMESTAMPTZ(6),
+    "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "tag_pkey" PRIMARY KEY ("idx")
 );
@@ -101,6 +110,18 @@ CREATE TABLE "genre" (
 
     CONSTRAINT "genre_pkey" PRIMARY KEY ("idx")
 );
+
+-- CreateTable
+CREATE TABLE "megamix" (
+    "idx" SERIAL NOT NULL,
+    "song_idx" INTEGER NOT NULL,
+    "version" INTEGER NOT NULL,
+
+    CONSTRAINT "megamix_pkey" PRIMARY KEY ("idx")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uq_megamix_song_version" ON "megamix"("song_idx", "version");
 
 -- AddForeignKey
 ALTER TABLE "chart" ADD CONSTRAINT "fk_song_to_chart" FOREIGN KEY ("song_idx") REFERENCES "song"("idx") ON DELETE NO ACTION ON UPDATE NO ACTION;
@@ -122,3 +143,6 @@ ALTER TABLE "tag" ADD CONSTRAINT "fk_song_to_tag" FOREIGN KEY ("song_idx") REFER
 
 -- AddForeignKey
 ALTER TABLE "genre" ADD CONSTRAINT "fk_song_to_genre" FOREIGN KEY ("song_idx") REFERENCES "song"("idx") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "megamix" ADD CONSTRAINT "fk_song_to_megamix" FOREIGN KEY ("song_idx") REFERENCES "song"("idx") ON DELETE NO ACTION ON UPDATE NO ACTION;

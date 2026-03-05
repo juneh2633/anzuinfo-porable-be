@@ -43,7 +43,7 @@ export class CommonService {
     if (rank === 0) {
       clearRank = 1.1;
     } else if (rank === 1) {
-      clearRank = 1.05;
+      clearRank = 1.06;
     } else if (rank === 2) {
       clearRank = 1.04;
     } else if (rank === 3) {

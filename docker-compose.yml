@@ -1,12 +1,88 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: anzu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-example_password!}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: anzu-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-example_redis_pw!} --port ${REDIS_PORT:-6379}
+    ports:
+      - '${REDIS_PORT:-6379}:${REDIS_PORT:-6379}'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-p', '${REDIS_PORT:-6379}', '-a', '${REDIS_PASSWORD:-example_redis_pw!}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
     image: anzu-info
     container_name: anzu-info
+    restart: unless-stopped
     ports:
       - '3000:3000'
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-example_password!}@postgres:5432/${POSTGRES_DB:-postgres}
+      - DB_HOST=redis
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: anzu-jenkins
+    restart: unless-stopped
+    user: root
+    ports:
+      - '8080:8080'
+      - '50000:50000'
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+
+  nginx:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: anzu-npm
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./docker/npm/data:/data
+      - ./docker/npm/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:
+  redis_data:
+  jenkins_home:
+
