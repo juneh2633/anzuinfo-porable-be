@@ -20,8 +20,8 @@ set -e
 DUMP_FILE="$1"
 PG_CONTAINER="anzu-postgres"
 REDIS_CONTAINER="anzu-redis"
-DB_USER="${POSTGRES_USER:-postgres}"
-DB_NAME="${POSTGRES_DB:-postgres}"
+DB_USER="postgres"
+DB_NAME="postgres"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DUMPS_DIR="$SCRIPT_DIR/dumps"
 

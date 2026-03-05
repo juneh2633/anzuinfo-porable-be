@@ -225,10 +225,3 @@ POST /chart/meta    → 곡 메타 데이터 캐시 (관리자 전용)
 
 ---
 
-## 주의 사항
-
-- **동명이곡 예외 처리**가 `playdata.service.ts`에 하드코딩되어 있습니다.
-  - `Prayer` (ぺのれり) vs `Prayer` (溝口ゆうま feat. 大瀬良あい)
-  - covered by ReGLOSS 시리즈 일부 곡
-- `DB_HOST`는 로컬 개발 시 `localhost`, 원격 서버 배포 시 서버 IP로 변경
-- Redis 캐시(`chart/cache`)는 DB 데이터 변경 시마다 재실행 필요

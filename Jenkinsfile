@@ -27,6 +27,11 @@ pipeline {
 
         stage('Deploy') {
             steps {
+                // Jenkins Credentials(Secret file)에서 .env 파일 가져와서 루트 경로에 덮어쓰기
+                withCredentials([file(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
+                    sh 'cp $ENV_FILE .env'
+                }
+                
                 // app, nginx 컨테이너만 재시작 (DB/Redis 유지)
                 sh 'docker compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app nginx'
             }
@@ -42,17 +47,20 @@ pipeline {
 
         stage('Cache Init') {
             steps {
-                // chart 캐시 & 메타 데이터 재빌드
-                sh '''
-                    sleep 3
-                    TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
-                        -H "Content-Type: application/json" \
-                        -d "{\\"id\\":\\"${ADMIN_ID}\\",\\"pw\\":\\"${ADMIN_PW}\\"}" \
-                        | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'accessToken\',\'\'))")
-                    curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/cache
-                    curl -s -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/meta
-                    echo "Cache init complete"
-                '''
+                // Jenkins Credentials(Username with password)에서 관리자 ID/PW 가져와서 환경변수에 세팅
+                withCredentials([usernamePassword(credentialsId: 'anzu-admin-credential', passwordVariable: 'ADMIN_PW', usernameVariable: 'ADMIN_ID')]) {
+                    // chart 캐시 & 메타 데이터 재빌드
+                    sh '''
+                        sleep 3
+                        TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+                            -H "Content-Type: application/json" \
+                            -d "{\\"id\\":\\"${ADMIN_ID}\\",\\"pw\\":\\"${ADMIN_PW}\\"}" \
+                            | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'accessToken\',\'\'))")
+                        curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/cache
+                        curl -s -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/meta
+                        echo "Cache init complete"
+                    '''
+                }
             }
         }
     }
