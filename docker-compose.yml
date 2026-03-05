@@ -3,10 +3,12 @@ services:
     image: postgres:17-alpine
     container_name: anzu-postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-example_password!}
-      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - '5432:5432'
     volumes:
@@ -45,7 +47,7 @@ services:
       - path: .env
         required: false
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-example_password!}@postgres:5432/${POSTGRES_DB:-postgres}
+      - DATABASE_URL=${DATABASE_URL}
       - DB_HOST=redis
 
     depends_on:
