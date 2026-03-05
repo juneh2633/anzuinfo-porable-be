@@ -7,7 +7,7 @@ var anzuinfoUrl = 'http://localhost:3000';
 function setAttribute(element, attr, value) {
   element.setAttribute(attr, value);
 }
-function delay(timeout) {
+function delay(timeout) { 
   var deferred = $.Deferred();
   return (
     setTimeout(function () {

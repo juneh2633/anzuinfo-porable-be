@@ -42,7 +42,8 @@ services:
     ports:
       - '3000:3000'
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-example_password!}@postgres:5432/${POSTGRES_DB:-postgres}
       - DB_HOST=redis
