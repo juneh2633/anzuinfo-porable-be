@@ -114,7 +114,7 @@ export class PlaydataService {
         if (
           data === undefined ||
           playdataObj.score > data.score ||
-          playdataObj.rank !== data.rank
+          (playdataObj.rank > data.rank && playdataObj.score >= data.score)
         ) {
           newRecordList.push(
             PlaydataCompareEntity.createEntity(
@@ -295,5 +295,39 @@ export class PlaydataService {
   async getTierlist(): Promise<any> {
     const data = tierlist;
     return data;
+  }
+
+  async recalculateAllVolforce(): Promise<number> {
+    const allPlaydata =
+      await this.playdataRepository.selectAllPlaydataWithChartLevel();
+
+    const updates = allPlaydata.map((data) => {
+      const levelStr = data.chart?.level?.toString() || '0';
+      const level = parseFloat(levelStr);
+      let newVf = 0;
+      if (level > 0) {
+        newVf = Math.floor(
+          this.commonService.getVolforce(level, data.score, data.rank),
+        );
+      }
+      return {
+        idx: data.idx,
+        chartVf: newVf,
+      };
+    });
+
+    if (updates.length > 0) {
+      await this.playdataRepository.updateAllPlaydataVf(updates);
+    }
+
+    // 캐시 삭제를 위해 고유 accountIdx 추출 후 제거
+    const accountIdxs = [...new Set(allPlaydata.map((d) => d.accountIdx))];
+    for (const accountIdx of accountIdxs) {
+      if (accountIdx) {
+        await this.deleteCachedPlaydata(accountIdx);
+      }
+    }
+
+    return updates.length;
   }
 }

@@ -3,7 +3,7 @@ var userInfo,
   trackDataList = [],
   currentPage = 0,
   maxPage = 0;
-var anzuinfoUrl = 'https://juneh2633.ddns.net';
+var anzuinfoUrl = 'http://localhost:3000';
 function setAttribute(element, attr, value) {
   element.setAttribute(attr, value);
 }

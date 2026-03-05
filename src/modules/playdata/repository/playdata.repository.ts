@@ -44,49 +44,47 @@ export class PlaydataRepository {
   }
 
   async selectVF(accountIdx: number, updatedAt: Date): Promise<Playdata[]> {
-    return await this.prismaService.playdata.findMany({
-      where: {
-        accountIdx: accountIdx,
-        createdAt: updatedAt,
-      },
-      orderBy: {
-        chartVf: 'desc',
-      },
-      take: 50,
+    if (!updatedAt) return [];
+    // chart별 최고점(가장 최근 기록) 기준 VF 상위 50개
+    const allBest = await this.prismaService.playdata.findMany({
+      where: { accountIdx },
+      distinct: ['chartIdx'],
+      orderBy: [{ chartIdx: 'asc' }, { createdAt: 'desc' }],
     });
+    return allBest
+      .sort((a, b) => b.chartVf - a.chartVf)
+      .slice(0, 50);
   }
 
   async selectVFRaw(
     accountIdx: number,
     updatedAt: Date,
   ): Promise<PlaydataVfRaw[]> {
-    return await this.prismaService.playdata.findMany({
+    if (!updatedAt) return [];
+    // chart별 최고점(가장 최근 기록) 기준 VF 상위 50개
+    const allBest = await this.prismaService.playdata.findMany({
+      where: { accountIdx },
+      distinct: ['chartIdx'],
+      orderBy: [{ chartIdx: 'asc' }, { createdAt: 'desc' }],
       select: {
+        chartIdx: true,
+        chartVf: true,
+        rank: true,
+        score: true,
+        createdAt: true,
         chart: {
           select: {
-            song: {
-              select: {
-                title: true,
-              },
-            },
+            song: { select: { title: true } },
             level: true,
             jacket: true,
             type: true,
           },
         },
-        rank: true,
-        score: true,
-        chartVf: true,
       },
-      where: {
-        accountIdx: accountIdx,
-        createdAt: updatedAt,
-      },
-      orderBy: {
-        chartVf: 'desc',
-      },
-      take: 50,
     });
+    return allBest
+      .sort((a, b) => b.chartVf - a.chartVf)
+      .slice(0, 50) as PlaydataVfRaw[];
   }
 
   async selectPlaydataByChart(
@@ -94,12 +92,14 @@ export class PlaydataRepository {
     updatedAt: Date,
     chartIdx: number,
   ): Promise<Playdata | null> {
+    if (!updatedAt) return null;
+    // 해당 chart의 all-time best 기록
     return await this.prismaService.playdata.findFirst({
       where: {
         accountIdx: accountIdx,
         chartIdx: chartIdx,
-        createdAt: updatedAt,
       },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -126,7 +126,8 @@ export class PlaydataRepository {
         accountIdx: accountIdx,
       },
       distinct: ['chartIdx'],
-      orderBy: [{ chartIdx: 'asc' }, { createdAt: 'desc' }],
+      // score 기준 all-time best (점수 최고점 우선)
+      orderBy: [{ chartIdx: 'asc' }, { score: 'desc' }],
     });
   }
 
@@ -146,19 +147,17 @@ export class PlaydataRepository {
     updatedAt: Date,
     level: number,
   ): Promise<Playdata[]> {
-    return await this.prismaService.playdata.findMany({
+    if (!updatedAt) return [];
+    // 해당 level의 chart별 all-time best 기록
+    const all = await this.prismaService.playdata.findMany({
       where: {
         accountIdx: accountIdx,
-        createdAt: updatedAt,
-        chart: {
-          level: level,
-        },
+        chart: { level: level },
       },
-
-      orderBy: {
-        score: 'desc',
-      },
+      distinct: ['chartIdx'],
+      orderBy: [{ chartIdx: 'asc' }, { createdAt: 'desc' }],
     });
+    return all.sort((a, b) => b.score - a.score);
   }
 
   async selectPlaydataRankingByChart(
@@ -228,6 +227,7 @@ export class PlaydataRepository {
     levelFilter: number[],
     keyword: string,
   ): Promise<Playdata[]> {
+    if (!updatedAt) return [];
     const result = await this.prismaService.playdata.findMany({
       where: {
         accountIdx: accountIdx,
@@ -284,5 +284,34 @@ export class PlaydataRepository {
       return [];
     }
     return JSON.parse(serializedData) as PlaydataEntity[];
+  }
+
+  async updateAllPlaydataVf(
+    updates: { idx: number; chartVf: number }[],
+  ): Promise<void> {
+    await this.prismaService.$transaction(
+      updates.map((update) =>
+        this.prismaService.playdata.update({
+          where: { idx: update.idx },
+          data: { chartVf: update.chartVf },
+        })
+      )
+    );
+  }
+
+  async selectAllPlaydataWithChartLevel(): Promise<any[]> {
+    return this.prismaService.playdata.findMany({
+      select: {
+        idx: true,
+        score: true,
+        rank: true,
+        accountIdx: true,
+        chart: {
+          select: {
+            level: true,
+          }
+        }
+      }
+    });
   }
 }

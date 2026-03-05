@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "account" ALTER COLUMN "sdvx_id" DROP NOT NULL,
-ALTER COLUMN "vf" DROP NOT NULL,
-ALTER COLUMN "play_count" DROP NOT NULL;
