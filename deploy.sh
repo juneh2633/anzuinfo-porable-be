@@ -35,10 +35,7 @@ echo "=========================================="
 echo "  Anzu Info 배포 시작"
 echo "=========================================="
 
-# ── 0. 환경설정 로드 (.env) ──────────────────────────────────
-if [ -f "$SCRIPT_DIR/.env" ]; then
-  export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
-fi
+
 
 # ── 1. 이미지 빌드 (옵션) ─────────────────────────────────────
 if $DO_BUILD; then
@@ -53,7 +50,7 @@ echo "🚀 [2/5] postgres, redis 기동..."
 docker compose up -d postgres redis jenkins
 
 echo "⏳  postgres healthy 대기..."
-until docker exec anzu-postgres pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" > /dev/null 2>&1; do
+until docker exec anzu-postgres pg_isready -U "postgres" -d "postgres" > /dev/null 2>&1; do
   sleep 2
 done
 echo "✅  postgres 준비 완료"

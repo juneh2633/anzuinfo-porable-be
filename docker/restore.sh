@@ -20,14 +20,8 @@ set -e
 DUMP_FILE="$1"
 PG_CONTAINER="anzu-postgres"
 REDIS_CONTAINER="anzu-redis"
-# ── 환경설정 로드 (.env) ──
-ENV_FILE="$(cd "$SCRIPT_DIR/.." && pwd)/.env"
-if [ -f "$ENV_FILE" ]; then
-  export $(grep -v '^#' "$ENV_FILE" | xargs)
-fi
-
-DB_USER="${POSTGRES_USER:-postgres}"
-DB_NAME="${POSTGRES_DB:-postgres}"
+DB_USER="postgres"
+DB_NAME="postgres"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DUMPS_DIR="$SCRIPT_DIR/dumps"
 
