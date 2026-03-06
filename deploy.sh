@@ -77,9 +77,21 @@ docker compose up -d app nginx
 echo "⏳  app 부팅 대기 (10초)..."
 sleep 10
 
-# ── 5. Prisma migrate ────────────────────────────────────────────
+# ── 5. Prisma migrate (app 내부에서 실행) ───────────────────────
 echo "🔄 [5/5] Prisma migrate deploy..."
-docker exec anzu-info npx prisma migrate deploy || true
+MIGRATIONS_DIR="$SCRIPT_DIR/prisma/migrations"
+if [ -d "$MIGRATIONS_DIR" ]; then
+  INIT_DIR=$(find "$MIGRATIONS_DIR" -maxdepth 1 -type d -name "*_init" | head -1)
+  if [ -n "$INIT_DIR" ] && [ -n "$PG_DUMP" ]; then
+    INIT_NAME=$(basename "$INIT_DIR")
+    echo "🔄  [Prisma] migration 히스토리 초기화 (덤프 복구 대응)..."
+    docker exec anzu-postgres bash -c "psql -U postgres -d postgres -c 'TRUNCATE _prisma_migrations;'" 2>/dev/null || true
+    echo "🔄  [Prisma] baseline migration 적용: $INIT_NAME"
+    docker compose exec app npx prisma migrate resolve --applied "$INIT_NAME" || true
+  fi
+fi
+
+docker compose exec app npx prisma migrate deploy
 
 echo ""
 echo "=========================================="

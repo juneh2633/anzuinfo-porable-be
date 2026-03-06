@@ -86,24 +86,3 @@ else
     "/tmp/$DUMP_FILE"
 fi
 echo "✅  [Postgres] 복구 완료!"
-
-# ──────────────────────────────────────────
-# Prisma migration 처리
-# ──────────────────────────────────────────
-MIGRATIONS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/prisma/migrations"
-if [ -d "$MIGRATIONS_DIR" ]; then
-  INIT_DIR=$(find "$MIGRATIONS_DIR" -maxdepth 1 -type d -name "*_init" | head -1)
-  if [ -n "$INIT_DIR" ]; then
-    INIT_NAME=$(basename "$INIT_DIR")
-    echo "🔄  [Prisma] migration 히스토리 초기화..."
-    docker exec "$PG_CONTAINER" bash -c \
-      "psql -U $DB_USER -d $DB_NAME -c 'TRUNCATE _prisma_migrations;'" 2>/dev/null || true
-    echo "🔄  [Prisma] baseline migration 적용: $INIT_NAME"
-    cd "$(cd "$SCRIPT_DIR/.." && pwd)" && npx prisma migrate resolve --applied "$INIT_NAME"
-    echo "✅  [Prisma] 완료!"
-  else
-    echo "⚠️   [Prisma] init migration 폴더 없음. 'npx prisma migrate dev --name init' 먼저 실행하세요."
-  fi
-else
-  echo "⚠️   [Prisma] migrations 폴더 없음."
-fi
