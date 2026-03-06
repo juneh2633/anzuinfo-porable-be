@@ -56,6 +56,13 @@ echo "⏳  postgres healthy 대기..."
 until docker exec anzu-postgres pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" > /dev/null 2>&1; do
   sleep 2
 done
+
+# initdb 이후 재시작 타이밍(Race condition) 방어
+echo "⏳  postgres initdb 재시작 대기 (안정화)..."
+sleep 5
+while ! docker logs anzu-postgres 2>&1 | grep -q 'database system is ready to accept connections'; do
+  sleep 2
+done
 echo "✅  postgres 준비 완료"
 
 # ── 3. dump 복구 ────────────────────────────────────────────────
@@ -88,7 +95,7 @@ if [ -d "$MIGRATIONS_DIR" ]; then
   if [ -n "$INIT_DIR" ] && [ -n "$PG_DUMP" ]; then
     INIT_NAME=$(basename "$INIT_DIR")
     echo "🔄  [Prisma] migration 히스토리 초기화 (덤프 복구 대응)..."
-    docker exec anzu-postgres bash -c "psql -U postgres -d postgres -c 'TRUNCATE _prisma_migrations;'" 2>/dev/null || true
+    docker exec anzu-postgres bash -c "psql -U \${POSTGRES_USER:-postgres} -d \${POSTGRES_DB:-postgres} -c 'TRUNCATE _prisma_migrations;'" 2>/dev/null || true
     echo "🔄  [Prisma] baseline migration 적용: $INIT_NAME"
     docker compose exec app npx prisma migrate resolve --applied "$INIT_NAME" || true
   fi
