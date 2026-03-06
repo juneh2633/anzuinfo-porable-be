@@ -30,10 +30,10 @@ pipeline {
         stage('Deploy') {
             when { branch 'main' }
             steps {
-                withCredentials([file(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
+                withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
                     sh """
                         set -euo pipefail
-                        cp "\$ENV_FILE" \$WORKSPACE/.env
+                        echo "\$ENV_FILE" > \$WORKSPACE/.env
                         chmod 600 \$WORKSPACE/.env
                     """
                 }
