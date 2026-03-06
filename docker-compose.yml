@@ -25,13 +25,13 @@ services:
     image: redis:7-alpine
     container_name: anzu-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-example_redis_pw!} --port ${REDIS_PORT:-6379}
+    command: redis-server --requirepass ${DB_REDIS_PASSWORD:-example_redis_pw!} --port ${DB_REDIS_PORT:-6379}
     ports:
-      - '${REDIS_PORT:-6379}:${REDIS_PORT:-6379}'
+      - '${DB_REDIS_PORT:-6379}:${DB_REDIS_PORT:-6379}'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', '-p', '${REDIS_PORT:-6379}', '-a', '${REDIS_PASSWORD:-example_redis_pw!}', 'ping']
+      test: ['CMD', 'redis-cli', '-p', '${DB_REDIS_PORT:-6379}', '-a', '${DB_REDIS_PASSWORD:-example_redis_pw!}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
