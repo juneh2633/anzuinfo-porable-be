@@ -3,17 +3,18 @@ services:
     image: postgres:17-alpine
     container_name: anzu-postgres
     restart: unless-stopped
+
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-example_password!}
-      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "example_password!"
+      POSTGRES_DB: "postgres"
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}']
+      test: ['CMD-SHELL', 'pg_isready -U "postgres" -d "postgres"']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,10 +43,10 @@ services:
     ports:
       - '3000:3000'
     env_file:
-      - path: .env
+      - path: app.env
         required: false
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-example_password!}@postgres:5432/${POSTGRES_DB:-postgres}
+      - DATABASE_URL=${DATABASE_URL}
       - DB_HOST=redis
 
     depends_on:

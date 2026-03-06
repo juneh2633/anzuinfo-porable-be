@@ -7,8 +7,7 @@ pipeline {
     }
 
     triggers {
-        // GitHub webhook 또는 SCM 폴링 (1분)
-        pollSCM('* * * * *')
+        // GitHub webhook 전용 (폴링 제거)
     }
 
     stages {
@@ -27,21 +26,35 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Jenkins Credentials(Secret file)에서 .env 파일 가져와서 루트 경로에 덮어쓰기
                 withCredentials([file(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
-                    sh 'cp $ENV_FILE .env'
+                    sh '''
+                        set -euo pipefail
+                        cp "$ENV_FILE" app.env
+                        chmod 600 app.env
+                    '''
                 }
                 
-                // app, nginx 컨테이너만 재시작 (DB/Redis 유지)
-                sh 'docker compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app nginx'
+                sh '''
+                    set -euo pipefail
+                    # app, nginx 컨테이너만 재시작 (DB/Redis 유지)
+                    docker compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app nginx
+                '''
+            }
+            post {
+                always {
+                    sh 'rm -f app.env || true'
+                }
             }
         }
 
         stage('Prisma Migrate') {
             steps {
-                // 컨테이너 기동 대기
-                sh 'sleep 5'
-                sh 'docker exec ${APP_NAME} npx prisma migrate deploy || true'
+                sh '''
+                    set -euo pipefail
+                    sleep 5
+                    # 컨테이너 종속성을 벗어나 compose exec 로 실행, 실패 시 배포 중단
+                    docker compose -f ${COMPOSE_FILE} exec -T app npx prisma migrate deploy
+                '''
             }
         }
 
@@ -49,15 +62,37 @@ pipeline {
             steps {
                 // Jenkins Credentials(Username with password)에서 관리자 ID/PW 가져와서 환경변수에 세팅
                 withCredentials([usernamePassword(credentialsId: 'anzu-admin-credential', passwordVariable: 'ADMIN_PW', usernameVariable: 'ADMIN_ID')]) {
-                    // chart 캐시 & 메타 데이터 재빌드
                     sh '''
-                        sleep 3
-                        TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+                        set -euo pipefail
+                        set +x  # 로그에 민감정보 안 찍히게
+
+                        # 서버 뜰 때까지 대기(timeout 실패 처리 포함)
+                        READY=0
+                        for i in $(seq 1 20); do
+                          if curl -fsS http://localhost:3000/chart/version >/dev/null 2>&1; then
+                            READY=1
+                            break
+                          fi
+                          sleep 2
+                        done
+
+                        if [ "$READY" -ne 1 ]; then
+                          echo "ERROR: app not ready (timeout)"
+                          exit 1
+                        fi
+
+                        TOKEN=$(curl -fsS -X POST http://localhost:3000/auth/login \
                             -H "Content-Type: application/json" \
                             -d "{\\"id\\":\\"${ADMIN_ID}\\",\\"pw\\":\\"${ADMIN_PW}\\"}" \
-                            | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'accessToken\',\'\'))")
-                        curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/cache
-                        curl -s -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/meta
+                            | python3 -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))")
+                        
+                        if [ -z "$TOKEN" ]; then
+                          echo "ERROR: login failed (no token)"
+                          exit 1
+                        fi
+
+                        curl -fsS -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/cache >/dev/null
+                        curl -fsS -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/meta >/dev/null
                         echo "Cache init complete"
                     '''
                 }
