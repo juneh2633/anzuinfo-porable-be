@@ -289,14 +289,32 @@ export class PlaydataRepository {
   async updateAllPlaydataVf(
     updates: { idx: number; chartVf: number }[],
   ): Promise<void> {
-    await this.prismaService.$transaction(
-      updates.map((update) =>
-        this.prismaService.playdata.update({
-          where: { idx: update.idx },
-          data: { chartVf: update.chartVf },
+    // 5,000건씩 청크를 나누어 Raw Query로 벌크 업데이트 (메모리 폭발 방지)
+    const chunkSize = 5000;
+    
+    for (let i = 0; i < updates.length; i += chunkSize) {
+      const chunk = updates.slice(i, i + chunkSize);
+      
+      const values: any[] = [];
+      const placeholders = chunk
+        .map((update, index) => {
+          // 인덱스 기반으로 파라미터 맵핑: $1, $2, $3...
+          const idxParam = index * 2 + 1;
+          const vfParam = index * 2 + 2;
+          values.push(update.idx, update.chartVf);
+          return `($${idxParam}::int, $${vfParam}::int)`;
         })
-      )
-    );
+        .join(', ');
+
+      const query = `
+        UPDATE playdata AS p
+        SET chart_vf = v.vf
+        FROM (VALUES ${placeholders}) AS v(idx, vf)
+        WHERE p.idx = v.idx;
+      `;
+
+      await this.prismaService.$executeRawUnsafe(query, ...values);
+    }
   }
 
   async selectAllPlaydataWithChartLevel(): Promise<any[]> {
