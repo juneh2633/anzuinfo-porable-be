@@ -29,8 +29,8 @@ pipeline {
                 withCredentials([file(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
                     sh '''
                         set -euo pipefail
-                        cp "$ENV_FILE" app.env
-                        chmod 600 app.env
+                        cp "$ENV_FILE" .env
+                        chmod 600 .env
                     '''
                 }
                 
@@ -42,7 +42,7 @@ pipeline {
             }
             post {
                 always {
-                    sh 'rm -f app.env || true'
+                    sh 'rm -f .env || true'
                 }
             }
         }
