@@ -104,7 +104,7 @@ export class PlaydataService {
           accountIdx: user.idx,
           chartIdx: parseInt(chartIdx, 10),
           chartVf: Math.floor(
-            this.commonService.getVolforce(parseInt(level, 10), score, rankIdx),
+            this.commonService.getVolforce(parseFloat(level), score, rankIdx),
           ),
           rank: rankIdx,
           score: score,
