@@ -30,12 +30,26 @@ pipeline {
         stage('Deploy') {
             when { branch 'main' }
             steps {
-                withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
-                    sh """
-                        set -euo pipefail
-                        echo "\$ENV_FILE" > \$WORKSPACE/.env
-                        chmod 600 \$WORKSPACE/.env
-                    """
+                script {
+                    if (fileExists('.env')) {
+                        echo "✅ Local .env file found in workspace. Using server's local .env."
+                        env.USED_LOCAL_ENV = 'true'
+                    } else {
+                        echo "⚠️ Local .env not found. Fetching from Jenkins Secret Text (anzu-production-env)..."
+                        try {
+                            withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
+                                sh """
+                                    set -euo pipefail
+                                    echo "\$ENV_FILE" > \$WORKSPACE/.env
+                                    chmod 600 \$WORKSPACE/.env
+                                """
+                            }
+                            env.USED_LOCAL_ENV = 'false'
+                        } catch (Exception e) {
+                            echo "❌ Secret Text (anzu-production-env) credentials not found! This might cause Docker setup to fail."
+                            env.USED_LOCAL_ENV = 'error'
+                        }
+                    }
                 }
                 
                 sh """
@@ -46,7 +60,14 @@ pipeline {
             }
             post {
                 always {
-                    sh 'rm -f $WORKSPACE/.env || true'
+                    script {
+                        if (env.USED_LOCAL_ENV == 'false') {
+                            sh 'rm -f $WORKSPACE/.env || true'
+                            echo "🧹 Removed generated .env file for security."
+                        } else {
+                            echo "Skipping .env deletion (Used local fallback .env or failed to generate)"
+                        }
+                    }
                 }
             }
         }
