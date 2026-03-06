@@ -19,6 +19,7 @@ pipeline {
         }
 
         stage('Build') {
+            when { branch 'main' }
             steps {
                 sh """
                     /usr/bin/docker compose -f ${COMPOSE_FILE} build app
@@ -27,6 +28,7 @@ pipeline {
         }
 
         stage('Deploy') {
+            when { branch 'main' }
             steps {
                 withCredentials([file(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
                     sh """
@@ -50,6 +52,7 @@ pipeline {
         }
 
         stage('Prisma Migrate') {
+            when { branch 'main' }
             steps {
                 sh """
                     set -euo pipefail
@@ -66,6 +69,7 @@ pipeline {
         }
 
         stage('Cache Init') {
+            when { branch 'main' }
             steps {
                 // Jenkins Credentials(Username with password)에서 관리자 ID/PW 가져와서 환경변수에 세팅
                 withCredentials([usernamePassword(credentialsId: 'anzu-admin-credential', passwordVariable: 'ADMIN_PW', usernameVariable: 'ADMIN_ID')]) {
