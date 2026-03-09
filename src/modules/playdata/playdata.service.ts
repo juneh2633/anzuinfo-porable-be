@@ -44,17 +44,19 @@ export class PlaydataService {
 
     for (const track of getDataDto.playdata) {
       const { title, artist, chart } = track;
+      // 특수 공백(NBSP 등) 및 연속된 공백을 단일 스페이스로 정제
+      const cleanTitle = title.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
 
       for (const scoreData of chart) {
         const { chartType, clearType, score } = scoreData;
         const typeAndTitle =
-          chartType + '____' + title.replace('(EXIT TUNES)', '');
+          chartType + '____' + cleanTitle.replace('(EXIT TUNES)', '');
         const safeKey = crypto
           .createHash('sha256')
           .update(typeAndTitle, 'utf8')
           .digest('hex');
         let chartIdxWithLevel = '';
-        if (title === 'Prayer' && artist === 'ぺのれり') {
+        if (cleanTitle === 'Prayer' && artist === 'ぺのれり') {
           if (chartType === 'novice') {
             chartIdxWithLevel = '2521@@6';
           } else if (chartType === 'advanced') {
@@ -62,7 +64,7 @@ export class PlaydataService {
           } else {
             chartIdxWithLevel = '2523@@18.3';
           }
-        } else if (title === 'Prayer') {
+        } else if (cleanTitle === 'Prayer') {
           if (chartType === 'novice') {
             chartIdxWithLevel = '7231@@6';
           } else if (chartType === 'advanced') {
@@ -76,13 +78,13 @@ export class PlaydataService {
           chartIdxWithLevel = await this.redisService.get(safeKey);
         }
 
-        if(title === 'カジノファイヤーことみちゃん' && artist === 'covered by 一条莉々華(ReGLOSS)'){
+        if(cleanTitle === 'カジノファイヤーことみちゃん' && artist === 'covered by 一条莉々華(ReGLOSS)'){
           if(chartType === 'maximum'){
             chartIdxWithLevel = '8094@@18'
           }
         }
 
-        if(title === '朱と碧のランページ' && artist === 'covered by 儒烏風亭らでん(ReGLOSS)'){
+        if(cleanTitle === '朱と碧のランページ' && artist === 'covered by 儒烏風亭らでん(ReGLOSS)'){
           if(chartType === 'maximum'){
             chartIdxWithLevel = '8096@@17'
           }
