@@ -19,7 +19,6 @@ pipeline {
         }
 
         stage('Build') {
-            when { branch 'main' }
             steps {
                 sh """
                     /usr/bin/docker compose -f ${COMPOSE_FILE} build app
@@ -28,7 +27,6 @@ pipeline {
         }
 
         stage('Deploy') {
-            when { branch 'main' }
             steps {
                 script {
                     if (fileExists('.env')) {
@@ -54,8 +52,10 @@ pipeline {
                 
                 sh """
                     set -euo pipefail
-                    # app, nginx 컨테이너만 재시작 (DB/Redis 유지)
-                    /usr/bin/docker compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app nginx
+                    # app 컨테이너만 재시작 (DB/Redis 유지, nginx 호스트볼륨 DooD 꼬임 방지)
+                    /usr/bin/docker compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app
+                    # app IP가 바뀌었으므로 nginx는 단순 restart(compose up 시 재생성 방지)
+                    /usr/bin/docker restart anzu-npm
                 """
             }
             post {
@@ -73,7 +73,6 @@ pipeline {
         }
 
         stage('Prisma Migrate') {
-            when { branch 'main' }
             steps {
                 sh """
                     set -euo pipefail
@@ -90,7 +89,6 @@ pipeline {
         }
 
         stage('Cache Init') {
-            when { branch 'main' }
             steps {
                 // Jenkins Credentials(Username with password)에서 관리자 ID/PW 가져와서 환경변수에 세팅
                 withCredentials([usernamePassword(credentialsId: 'anzu-admin-credential', passwordVariable: 'ADMIN_PW', usernameVariable: 'ADMIN_ID')]) {
