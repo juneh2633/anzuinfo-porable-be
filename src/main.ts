@@ -36,9 +36,10 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpErrorFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  const bootTime = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   const config = new DocumentBuilder()
     .setTitle('anzuinfo-p')
-    .setDescription('anzuinfo api document')
+    .setDescription(`anzuinfo api document (Last Boot: ${bootTime})`)
     .addTag('anzuinfo')
     .addBearerAuth()
     .build();
