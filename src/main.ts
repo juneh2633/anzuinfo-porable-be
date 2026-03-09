@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import * as bodyParser from 'body-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpErrorFilter } from './common/filter/HttpErrorFilter';
+import { LoggingInterceptor } from './common/interceptor/logging.interceptor';
 import * as expressBasicAuth from 'express-basic-auth';
 
 // Load environment variables from .env file
@@ -33,6 +34,7 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new HttpErrorFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   const config = new DocumentBuilder()
     .setTitle('anzuinfo-p')
