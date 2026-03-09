@@ -48,3 +48,6 @@ tests/
 __tests__/
 __mocks__/
 .jest/
+
+# Local Deployment & Storage
+docker/
