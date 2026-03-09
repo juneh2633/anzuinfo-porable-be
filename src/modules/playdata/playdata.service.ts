@@ -60,7 +60,7 @@ export class PlaydataService {
           } else if (chartType === 'advanced') {
             chartIdxWithLevel = '2522@@12';
           } else {
-            chartIdxWithLevel = '2523@@18';
+            chartIdxWithLevel = '2523@@18.3';
           }
         } else if (title === 'Prayer') {
           if (chartType === 'novice') {
@@ -70,7 +70,7 @@ export class PlaydataService {
           } else if (chartType === 'exhaust') {
             chartIdxWithLevel = '7233@@15';
           } else {
-            chartIdxWithLevel = '7234@@18';
+            chartIdxWithLevel = '7234@@18.2';
           }
         } else {
           chartIdxWithLevel = await this.redisService.get(safeKey);
@@ -114,7 +114,8 @@ export class PlaydataService {
         if (
           data === undefined ||
           playdataObj.score > data.score ||
-          (playdataObj.rank > data.rank && playdataObj.score >= data.score)
+          (playdataObj.rank > data.rank && playdataObj.score >= data.score) ||
+          playdataObj.chartVf > data.chartVf
         ) {
           newRecordList.push(
             PlaydataCompareEntity.createEntity(
