@@ -123,8 +123,6 @@ pipeline {
                           exit 1
                         fi
 
-                        curl -fsS -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/cache >/dev/null
-                        curl -fsS -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/chart/meta >/dev/null
                         echo "Cache init complete"
                     '''
                 }
