@@ -50,7 +50,8 @@ export class ChartService {
       ) {
         data.type = 'infinite';
       }
-      const typeAndTitle = data.type + '____' + data.song.title;
+      const cleanTitle = data.song.title.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+      const typeAndTitle = data.type + '____' + cleanTitle;
       const safeKey = crypto
         .createHash('sha256')
         .update(typeAndTitle, 'utf8')
