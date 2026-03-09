@@ -114,7 +114,8 @@ export class PlaydataService {
         if (
           data === undefined ||
           playdataObj.score > data.score ||
-          (playdataObj.rank > data.rank && playdataObj.score >= data.score)
+          (playdataObj.rank > data.rank && playdataObj.score >= data.score) ||
+          playdataObj.chartVf > data.chartVf
         ) {
           newRecordList.push(
             PlaydataCompareEntity.createEntity(
