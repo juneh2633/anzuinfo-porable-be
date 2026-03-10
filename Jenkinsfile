@@ -34,22 +34,17 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 script {
-                    if (fileExists('.env')) {
-                        echo "✅ Local .env file found in workspace. Using server's local .env."
-                        env.USED_LOCAL_ENV = 'true'
-                    } else {
-                        echo "⚠️ Local .env not found. Fetching from Jenkins Secret Text (anzu-production-env)..."
-                        try {
-                            withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
-                                writeFile file: '.env', text: ENV_FILE
-                                sh "chmod 600 .env"
-                            }
-                            env.USED_LOCAL_ENV = 'false'
-                        } catch (Exception e) {
-                            echo "❌ Secret Text (anzu-production-env) credentials not found or failed to load!"
-                            echo "Error details: ${e.getMessage()}"
-                            env.USED_LOCAL_ENV = 'error'
+                    echo "Fetching environment variables from Jenkins Secret Text (anzu-production-env)..."
+                    try {
+                        withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
+                            writeFile file: '.env', text: ENV_FILE
+                            sh "chmod 600 .env"
                         }
+                        env.USED_LOCAL_ENV = 'false'
+                    } catch (Exception e) {
+                        echo "❌ Secret Text (anzu-production-env) credentials not found or failed to load!"
+                        echo "Error details: ${e.getMessage()}"
+                        env.USED_LOCAL_ENV = 'error'
                     }
                 }
             }
