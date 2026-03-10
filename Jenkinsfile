@@ -60,6 +60,8 @@ pipeline {
             steps {
                 sh """
                     set -euo pipefail
+                    # 이전 프로젝트명(기본값) 찌꺼기로 인한 이름 충돌 방지를 위해 기존 컨테이너 강제 삭제
+                    docker rm -f anzu-info || true
                     # app 컨테이너만 재시작 (DB/Redis 유지, nginx 호스트볼륨 DooD 꼬임 방지)
                     ./bin/docker-compose -p anzuinfo --env-file "\$WORKSPACE/.env" --project-directory "\$WORKSPACE" -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app
                     # app IP가 바뀌었으므로 nginx는 단순 restart(compose up 시 재생성 방지)
