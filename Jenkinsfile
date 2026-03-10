@@ -18,10 +18,23 @@ pipeline {
             }
         }
 
+        stage('Setup Docker Compose') {
+            steps {
+                sh '''
+                    mkdir -p bin
+                    if [ ! -x "./bin/docker-compose" ]; then
+                        echo "Downloading standalone docker-compose..."
+                        curl -SL "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-x86_64" -o ./bin/docker-compose
+                        chmod +x ./bin/docker-compose
+                    fi
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 sh """
-                    docker-compose -f ${COMPOSE_FILE} build app
+                    ./bin/docker-compose -f ${COMPOSE_FILE} build app
                 """
             }
         }
@@ -53,7 +66,7 @@ pipeline {
                 sh """
                     set -euo pipefail
                     # app 컨테이너만 재시작 (DB/Redis 유지, nginx 호스트볼륨 DooD 꼬임 방지)
-                    docker-compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app
+                    ./bin/docker-compose -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app
                     # app IP가 바뀌었으므로 nginx는 단순 restart(compose up 시 재생성 방지)
                     docker restart anzu-npm
                 """
@@ -78,12 +91,12 @@ pipeline {
                     set -euo pipefail
                     
                     # app 컨테이너 내부 서비스가 준비될 때까지 대기
-                    until docker-compose -f ${COMPOSE_FILE} exec -T app npx prisma -v >/dev/null 2>&1; do
+                    until ./bin/docker-compose -f ${COMPOSE_FILE} exec -T app npx prisma -v >/dev/null 2>&1; do
                       sleep 2
                     done
 
                     # 컨테이너 종속성을 벗어나 compose exec 로 실행, 실패 시 배포 중단
-                    docker-compose -f ${COMPOSE_FILE} exec -T app npx prisma migrate deploy
+                    ./bin/docker-compose -f ${COMPOSE_FILE} exec -T app npx prisma migrate deploy
                 """
             }
         }
