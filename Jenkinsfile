@@ -31,15 +31,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                sh """
-                    ./bin/docker-compose -f ${COMPOSE_FILE} build app
-                """
-            }
-        }
-
-        stage('Deploy') {
+        stage('Prepare Environment') {
             steps {
                 script {
                     if (fileExists('.env')) {
@@ -62,7 +54,19 @@ pipeline {
                         }
                     }
                 }
-                
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh """
+                    ./bin/docker-compose -f ${COMPOSE_FILE} build app
+                """
+            }
+        }
+
+        stage('Deploy') {
+            steps {
                 sh """
                     set -euo pipefail
                     # app 컨테이너만 재시작 (DB/Redis 유지, nginx 호스트볼륨 DooD 꼬임 방지)
