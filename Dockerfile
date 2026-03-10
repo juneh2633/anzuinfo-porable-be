@@ -9,6 +9,8 @@ COPY package*.json .
 
 COPY  . .
 
+# Install native build dependencies for bcrypt and other gyp packages on Alpine
+RUN apk add --no-cache python3 make g++
 
 RUN npm ci
 
