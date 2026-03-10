@@ -69,6 +69,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker:ro
       - /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose:ro
+      - ./:/host_project:ro
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
 

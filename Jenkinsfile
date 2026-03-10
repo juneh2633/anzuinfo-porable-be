@@ -33,20 +33,18 @@ pipeline {
 
         stage('Prepare Environment') {
             steps {
-                script {
-                    echo "Fetching environment variables from Jenkins Secret Text (anzu-production-env)..."
-                    try {
-                        withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
-                            writeFile file: '.env', text: ENV_FILE
-                            sh "chmod 600 .env"
-                        }
-                        env.USED_LOCAL_ENV = 'false'
-                    } catch (Exception e) {
-                        echo "❌ Secret Text (anzu-production-env) credentials not found or failed to load!"
-                        echo "Error details: ${e.getMessage()}"
-                        env.USED_LOCAL_ENV = 'error'
-                    }
-                }
+                sh """
+                    set -euo pipefail
+                    echo "Fetching environment variables from host project directory..."
+                    if [ -f "/host_project/.env" ]; then
+                        cp /host_project/.env \$WORKSPACE/.env
+                        chmod 600 \$WORKSPACE/.env
+                        echo "✅ Successfully copied .env from host project."
+                    else
+                        echo "❌ .env file not found in host project directory (/host_project/.env)!"
+                        exit 1
+                    fi
+                """
             }
         }
 
