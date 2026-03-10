@@ -49,7 +49,8 @@ pipeline {
                             }
                             env.USED_LOCAL_ENV = 'false'
                         } catch (Exception e) {
-                            echo "❌ Secret Text (anzu-production-env) credentials not found! This might cause Docker setup to fail."
+                            echo "❌ Secret Text (anzu-production-env) credentials not found or failed to load!"
+                            echo "Error details: ${e.getMessage()}"
                             env.USED_LOCAL_ENV = 'error'
                         }
                     }
