@@ -41,11 +41,8 @@ pipeline {
                         echo "⚠️ Local .env not found. Fetching from Jenkins Secret Text (anzu-production-env)..."
                         try {
                             withCredentials([string(credentialsId: 'anzu-production-env', variable: 'ENV_FILE')]) {
-                                sh """
-                                    set -euo pipefail
-                                    echo "\$ENV_FILE" > \$WORKSPACE/.env
-                                    chmod 600 \$WORKSPACE/.env
-                                """
+                                writeFile file: '.env', text: ENV_FILE
+                                sh "chmod 600 .env"
                             }
                             env.USED_LOCAL_ENV = 'false'
                         } catch (Exception e) {
