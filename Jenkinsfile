@@ -56,17 +56,20 @@ pipeline {
                 // To deploy, you need a Jenkins Credential named 'prod-server-ssh'
                 // Type: "SSH Username with private key"
                 sshagent(credentials: ['prod-server-ssh']) {
-                    sh '''
-                        set -euo pipefail
-                        
-                        echo "🚀 Triggering remote deployment on ${PROD_SERVER_IP}..."
-                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
-                            cd ${DEPLOY_DIR} &&
-                            docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
-                            export IMAGE_TAG=${IMAGE_TAG} &&
-                            docker compose -p anzuinfo-porable-be up -d --no-deps --force-recreate app
-                        "
-                    '''
+                    withCredentials([usernamePassword(credentialsId: 'github-registry-cred', passwordVariable: 'GH_TOKEN', usernameVariable: 'GH_USER')]) {
+                        sh '''
+                            set -euo pipefail
+                            
+                            echo "🚀 Triggering remote deployment on ${PROD_SERVER_IP}..."
+                            ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
+                                cd ${DEPLOY_DIR} &&
+                                echo ${GH_TOKEN} | docker login ghcr.io -u ${GH_USER} --password-stdin &&
+                                docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
+                                export IMAGE_TAG=${IMAGE_TAG} &&
+                                docker compose -p anzuinfo-porable-be up -d --no-deps --force-recreate app
+                            "
+                        '''
+                    }
                 }
             }
         }
