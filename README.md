@@ -242,7 +242,8 @@ graph TD;
 
 ### 1. Swap 메모리 설정 (1GB RAM 필수)
 
-서버 빌드 시 OOM(Out Of Memory)로 인한 강제 종료를 방지하기 위해 호스트 OS(Ubuntu)에 2GB의 Swap(가상) 메모리를 반드시 셋팅해야 합니다.
+운영 서버(Production)와 젠킨스 빌드 서버(CI) 모두 OOM(Out Of Memory) 뻗음 현상을 방지하기 위해 호스트 OS(Ubuntu)에 **2GB의 Swap(가상) 메모리를 반드시 각각 세팅**해야 합니다. 
+(특히 새로운 CI 서버는 무거운 JVM 환경과 `docker build`를 동시에 견뎌야 하므로 매우 중요합니다.)
 
 ```bash
 # 2GB Swap 공간 생성 및 할당
@@ -275,6 +276,12 @@ sudo crontab -e
 
 운영 환경에서는 자원 최적화와 DB 보안을 위해 **Prisma Studio가 기본적으로 기동되지 않습니다** (`profiles: ["debug"]` 설정). 
 DB 관리가 필요할 때만 터미널에서 수동으로 스튜디오를 별도 기동해야 합니다.
+
+### 4. CI/CD 및 `.env` 파일 관리 격리 (보안)
+
+이번 아키텍처 개선으로, 운영 서버(CD)는 소스코드를 가지지 않으며 오로지 `docker-compose.yml`과 **`.env`** 만을 사용하여 미리 빌드된 이미지를 실행합니다. 
+따라서 운영 서버의 `/home/ubuntu/anzuinfo-porable-be` 경로에는 어드민 비밀번호 등이 담긴 `.env`를 수동으로 안전하게 배치해두어야 합니다. 
+**주의: `.env` 파일은 절대로 Github에 커밋되거나 Jenkins 서버에 업로드되어서는 안 됩니다.**
 
 ```bash
 # Prisma Studio 임시 구동

@@ -1,145 +1,120 @@
 pipeline {
     agent any
-
+ 
     environment {
-        APP_NAME    = 'anzu-info'
+        APP_NAME = 'anzu-info'
         COMPOSE_FILE = 'docker-compose.yml'
-        IMAGE_TAG    = "${env.BUILD_NUMBER}"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        REGISTRY = 'ghcr.io'
+        // GitHub Username and Image Name
+        GITHUB_USER = 'juneh2633'
+        IMAGE_NAME = "ghcr.io/${GITHUB_USER}/anzu-info"
+        
+        // --- PRODUCTION DEPLOYMENT VARIABLES ---
+        // Change these or set them via Jenkins Environment Variables
+        PROD_SSH_USER = 'ubuntu' 
+        PROD_SERVER_IP = 'juneh2633.ddns.net' // Make sure this matches your Prod Server IP/Domain
+        DEPLOY_DIR = '/home/ubuntu/anzuinfo-porable-be'
     }
 
     triggers {
-        githubPush() // GitHub webhook 전용 (폴링 제거)
+        githubPush()
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Setup Docker Compose') {
+        stage('Registry Login') {
             steps {
-                sh '''
-                    mkdir -p bin
-                    if [ ! -x "./bin/docker-compose" ]; then
-                        echo "Downloading standalone docker-compose..."
-                        curl -SL "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-x86_64" -o ./bin/docker-compose
-                        chmod +x ./bin/docker-compose
-                    fi
-                '''
-            }
-        }
-
-        stage('Prepare Environment') {
-            steps {
-                sh """
-                    set -euo pipefail
-                    echo "Fetching environment variables from host project directory..."
-                    if [ -f "/host_project/.env" ]; then
-                        cp /host_project/.env \$WORKSPACE/.env
-                        chmod 600 \$WORKSPACE/.env
-                        echo "✅ Successfully copied .env from host project."
-                    else
-                        echo "❌ .env file not found in host project directory (/host_project/.env)!"
-                        exit 1
-                    fi
-                """
-            }
-        }
-
-        stage('Build') {
-            steps {
-                sh """
-                    ./bin/docker-compose -p anzuinfo-porable-be --env-file "\$WORKSPACE/.env" --project-directory "\$WORKSPACE" -f ${COMPOSE_FILE} build app
-                """
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh """
-                    set -euo pipefail
-                    # app 컨테이너만 재시작 (DB/Redis 유지, nginx 호스트볼륨 DooD 꼬임 방지)
-                    ./bin/docker-compose -p anzuinfo-porable-be --env-file "\$WORKSPACE/.env" --project-directory "\$WORKSPACE" -f ${COMPOSE_FILE} up -d --no-deps --force-recreate app
-                    # app IP가 바뀌었으므로 nginx는 단순 restart(compose up 시 재생성 방지)
-                    docker restart anzu-npm
-                """
-            }
-            post {
-                always {
-                    script {
-                        if (env.USED_LOCAL_ENV == 'false') {
-                            sh 'rm -f $WORKSPACE/.env || true'
-                            echo "🧹 Removed generated .env file for security."
-                        } else {
-                            echo "Skipping .env deletion (Used local fallback .env or failed to generate)"
-                        }
-                    }
+                // To push to GHCR, you need a Jenkins Credential named 'github-registry-cred'
+                // Type: "Username with password" (Username = github_id, Password = Personal Access Token)
+                withCredentials([usernamePassword(credentialsId: 'github-registry-cred', passwordVariable: 'GH_TOKEN', usernameVariable: 'GH_USER')]) {
+                    sh 'echo $GH_TOKEN | docker login ghcr.io -u $GH_USER --password-stdin'
                 }
             }
         }
 
-        stage('Prisma Migrate') {
+        stage('Build Image') {
             steps {
-                sh """
-                    set -euo pipefail
-                    
-                    # app 컨테이너 내부 서비스가 준비될 때까지 대기
-                    until ./bin/docker-compose -p anzuinfo-porable-be --env-file "\$WORKSPACE/.env" --project-directory "\$WORKSPACE" -f ${COMPOSE_FILE} exec -T app npx prisma -v >/dev/null 2>&1; do
-                      sleep 2
-                    done
-
-                    # 컨테이너 종속성을 벗어나 compose exec 로 실행, 실패 시 배포 중단
-                    ./bin/docker-compose -p anzuinfo-porable-be --env-file "\$WORKSPACE/.env" --project-directory "\$WORKSPACE" -f ${COMPOSE_FILE} exec -T app npx prisma migrate deploy
-                """
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
             }
         }
 
-        stage('Cache Init') {
+        stage('Push Image') {
             steps {
-                // Jenkins Credentials(Username with password)에서 관리자 ID/PW 가져와서 환경변수에 세팅
-                withCredentials([usernamePassword(credentialsId: 'anzu-admin-credential', passwordVariable: 'ADMIN_PW', usernameVariable: 'ADMIN_ID')]) {
-                    sh '''
+                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker push ${IMAGE_NAME}:latest"
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                // To deploy, you need a Jenkins Credential named 'prod-server-ssh'
+                // Type: "SSH Username with private key"
+                sshagent(credentials: ['prod-server-ssh']) {
+                    sh """
                         set -euo pipefail
-                        set +x  # 로그에 민감정보 안 찍히게
-
-                        # 서버 뜰 때까지 대기(timeout 실패 처리 포함)
-                        READY=0
-                        for i in $(seq 1 20); do
-                          if curl -fsS http://localhost:3000/chart/version >/dev/null 2>&1; then
-                            READY=1
-                            break
-                          fi
-                          sleep 2
-                        done
-
-                        if [ "$READY" -ne 1 ]; then
-                          echo "ERROR: app not ready (timeout)"
-                          exit 1
-                        fi
-
-                        TOKEN=$(curl -fsS -X POST http://localhost:3000/auth/login \
-                            -H "Content-Type: application/json" \
-                            -d "{\\"id\\":\\"${ADMIN_ID}\\",\\"pw\\":\\"${ADMIN_PW}\\"}" \
-                            | jq -r '.accessToken')
                         
-                        if [ -z "$TOKEN" ]; then
-                          echo "ERROR: login failed (no token)"
-                          exit 1
-                        fi
+                        echo "🚀 Triggering remote deployment on $PROD_SERVER_IP..."
+                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
+                            cd ${DEPLOY_DIR} &&
+                            docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
+                            export IMAGE_TAG=${IMAGE_TAG} &&
+                            docker compose -p anzuinfo-porable-be up -d --no-deps --force-recreate app
+                        "
+                    """
+                }
+            }
+        }
+        
+        stage('Remote Prisma Migrate & Cache') {
+            steps {
+                sshagent(credentials: ['prod-server-ssh']) {
+                    sh """
+                        set -euo pipefail
+                        
+                        echo "🔄 Waiting for Application to become ready..."
+                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
+                            ready=false
+                            for i in \\$(seq 1 15); do
+                                if curl -s http://localhost:3000/healthcheck > /dev/null; then
+                                    echo '✅ Application is ready for migration!'
+                                    ready=true
+                                    break
+                                fi
+                                echo 'Waiting... (\${i}/15)'
+                                sleep 2
+                            done
 
-                        echo "Cache init complete"
-                    '''
+                            if [ \\$ready != true ]; then
+                                echo '❌ Error: Application failed to become ready within the timeout period.'
+                                exit 1
+                            fi
+                        "
+
+                        echo "🔄 Running DB Migrations..."
+                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
+                            cd ${DEPLOY_DIR} &&
+                            docker compose -p anzuinfo-porable-be exec -T app npx prisma migrate deploy
+                        "
+                        
+                        echo "🌐 Triggering Cache Initialization..."
+                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
+                            curl -fsS -X GET http://localhost:3000/chart/cache > /dev/null || true
+                        "
+                    """
                 }
             }
         }
 
-        stage('Docker Cleanup') {
+        stage('Docker Cleanup (CI Server)') {
             steps {
                 sh '''
-                    echo "🧹 Pruning dangling Docker images to free up space..."
+                    echo "🧹 Pruning dangling Docker images to free up CI space..."
                     docker image prune -f
                 '''
             }
@@ -148,10 +123,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ 배포 성공!'
+            echo '✅ Build & Deployment Pipeline Completed Successfully!'
         }
         failure {
-            echo '❌ 배포 실패. 로그를 확인해주세요.'
+            echo '❌ Pipeline Failed. Check the logs.'
         }
     }
 }
