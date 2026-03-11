@@ -56,17 +56,17 @@ pipeline {
                 // To deploy, you need a Jenkins Credential named 'prod-server-ssh'
                 // Type: "SSH Username with private key"
                 sshagent(credentials: ['prod-server-ssh']) {
-                    sh """
+                    sh '''
                         set -euo pipefail
                         
-                        echo "🚀 Triggering remote deployment on $PROD_SERVER_IP..."
+                        echo "🚀 Triggering remote deployment on ${PROD_SERVER_IP}..."
                         ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
                             cd ${DEPLOY_DIR} &&
                             docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
                             export IMAGE_TAG=${IMAGE_TAG} &&
                             docker compose -p anzuinfo-porable-be up -d --no-deps --force-recreate app
                         "
-                    """
+                    '''
                 }
             }
         }
@@ -74,27 +74,27 @@ pipeline {
         stage('Remote Prisma Migrate & Cache') {
             steps {
                 sshagent(credentials: ['prod-server-ssh']) {
-                    sh """
+                    sh '''
                         set -euo pipefail
                         
                         echo "🔄 Waiting for Application to become ready..."
-                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
+                        ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} '
                             ready=false
-                            for i in \\$(seq 1 15); do
+                            for i in $(seq 1 15); do
                                 if curl -s http://localhost:3000/healthcheck > /dev/null; then
-                                    echo '✅ Application is ready for migration!'
-                                    ready=true
+                                    echo "✅ Application is ready for migration!"
+                                    ready="true"
                                     break
                                 fi
-                                echo 'Waiting... (\${i}/15)'
+                                echo "Waiting... ($i/15)"
                                 sleep 2
                             done
 
-                            if [ \\$ready != true ]; then
-                                echo '❌ Error: Application failed to become ready within the timeout period.'
+                            if [ "$ready" != "true" ]; then
+                                echo "❌ Error: Application failed to become ready within the timeout period."
                                 exit 1
                             fi
-                        "
+                        '
 
                         echo "🔄 Running DB Migrations..."
                         ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
@@ -106,7 +106,7 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
                             curl -fsS -X GET http://localhost:3000/chart/cache > /dev/null || true
                         "
-                    """
+                    '''
                 }
             }
         }
