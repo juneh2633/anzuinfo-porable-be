@@ -5,9 +5,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /usr/src/app
 
-COPY package*.json .
+COPY package*.json ./
 
-COPY  . .
+COPY . ./
 
 # Install native build dependencies for bcrypt and other gyp packages on Alpine
 RUN apk add --no-cache python3 make g++
