@@ -27,6 +27,13 @@ COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/package*.json ./
 COPY --from=builder /usr/src/app/prisma ./prisma
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Healthcheck to enable Docker-level container monitoring
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:3000/healthcheck || exit 1
+
 # Expose the application port (adjust if necessary)
 EXPOSE 3000
 

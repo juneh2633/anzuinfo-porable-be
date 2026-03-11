@@ -225,3 +225,61 @@ POST /chart/meta    → 곡 메타 데이터 캐시 (관리자 전용)
 
 ---
 
+## 아키텍처 다이어그램 (운영 환경)
+
+```mermaid
+graph TD;
+    Internet-->|HTTPS/80/443|NPM[Nginx Proxy Manager]
+    NPM-->|HTTP/3000|App[anzu-info App]
+    App-->|5432|DB[(PostgreSQL)]
+    App-->|6379|Cache[(Redis)]
+    Jenkins[Jenkins CI/CD]-->|Deploy|App
+```
+
+> **아키텍처 참고자료**: 1GB RAM 서버 스펙의 제약으로 인해, 현재 자체 서버 내 배포(`npm ci`, `docker build` 등) 과정에서 순간적인 메모리 부족 및 성능 저하가 발생할 수 있습니다. 장기적으로는 외부 CI망에서 이미지를 빌드한 뒤 본 배포 서버에서는 `pull & up`만 수행하도록 빌드/배포 환경 분리 구조 개선을 고려하는 것이 안전합니다.
+
+## 운영 및 유지보수 가이드
+
+### 1. Swap 메모리 설정 (1GB RAM 필수)
+
+서버 빌드 시 OOM(Out Of Memory)로 인한 강제 종료를 방지하기 위해 호스트 OS(Ubuntu)에 2GB의 Swap(가상) 메모리를 반드시 셋팅해야 합니다.
+
+```bash
+# 2GB Swap 공간 생성 및 할당
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 서버 재부팅 시에도 자동 적용되도록 fstab 등록
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Swap 우선순위 최소화 (RAM을 최대한 우선 사용하도록 설정)
+sudo sysctl vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+```
+
+### 2. 정기적인 Docker 딥클린 (Cron 자동화)
+
+Jenkins 파이프라인의 `Docker Cleanup` 단계는 안전을 위해 사용하지 않는 "dangling" 이미지만 제거(`docker image prune -f`)합니다. 하지만 잦은 빌드로 인해 빌더 캐시나 더티 파일이 계속 쌓여 디스크를 차지할 수 있으므로, 주기적으로 호스트 서버에서 강력한 딥 클린을 수행하는 것이 좋습니다.
+
+```bash
+sudo crontab -e
+```
+아래 내용을 추가하여 매일 새벽 3시에 미사용 시스템 캐시와 이미지, 볼륨을 전부 청소합니다:
+```bash
+0 3 * * * docker system prune -af --volumes
+```
+
+### 3. Prisma Studio 접속 (수동 디버깅 전용)
+
+운영 환경에서는 자원 최적화와 DB 보안을 위해 **Prisma Studio가 기본적으로 기동되지 않습니다** (`profiles: ["debug"]` 설정). 
+DB 관리가 필요할 때만 터미널에서 수동으로 스튜디오를 별도 기동해야 합니다.
+
+```bash
+# Prisma Studio 임시 구동
+docker-compose --profile debug up -d prisma-studio
+
+# 작업 완료 후 보안 및 리소스 정리를 위해 스튜디오 종료
+docker-compose --profile debug stop prisma-studio
+```

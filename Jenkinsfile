@@ -4,6 +4,7 @@ pipeline {
     environment {
         APP_NAME    = 'anzu-info'
         COMPOSE_FILE = 'docker-compose.yml'
+        IMAGE_TAG    = "${env.BUILD_NUMBER}"
     }
 
     triggers {
@@ -132,6 +133,15 @@ pipeline {
                         echo "Cache init complete"
                     '''
                 }
+            }
+        }
+
+        stage('Docker Cleanup') {
+            steps {
+                sh '''
+                    echo "🧹 Pruning dangling Docker images to free up space..."
+                    docker image prune -f
+                '''
             }
         }
     }

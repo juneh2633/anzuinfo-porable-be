@@ -5,6 +5,10 @@ services:
     restart: unless-stopped
     networks:
       - anzu_net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     env_file:
       - .env
 
@@ -29,9 +33,11 @@ services:
     restart: unless-stopped
     networks:
       - anzu_net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     command: redis-server --requirepass ${DB_REDIS_PASSWORD:-example_redis_pw!} --port ${DB_REDIS_PORT:-6379}
-    ports:
-      - '${DB_REDIS_PORT:-6379}:${DB_REDIS_PORT:-6379}'
     volumes:
       - redis_data:/data
     healthcheck:
@@ -43,11 +49,15 @@ services:
   app:
     build:
       context: .
-    image: anzu-info
+    image: anzu-info:${IMAGE_TAG:-latest}
     container_name: anzu-info
     restart: unless-stopped
     networks:
       - anzu_net
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - '3000:3000'
     env_file:
@@ -68,6 +78,10 @@ services:
     restart: unless-stopped
     networks:
       - anzu_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     user: root
     ports:
       - '8080:8080'
@@ -80,10 +94,12 @@ services:
       - ./:/host_project:ro
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - JAVA_OPTS=-Xmx384m -Xms256m
 
   prisma-studio:
     image: node:22-alpine
     container_name: anzu-prisma-studio
+    profiles: ["debug"]
     restart: unless-stopped
     networks:
       - anzu_net
