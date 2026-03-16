@@ -1,14 +1,24 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
+import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { RedisHealthIndicator } from './redis-health.indicator';
+import { PrismaHealthIndicator } from './prisma-health.indicator';
+
 @ApiTags('Healthcheck API')
 @Controller('healthcheck')
 export class HealthcheckController {
-  /**
-   * healthcheck
-   */
+  constructor(
+    private health: HealthCheckService,
+    private redisHealth: RedisHealthIndicator,
+    private prismaHealth: PrismaHealthIndicator,
+  ) {}
+
   @Get('/')
-  async healthcheck(): Promise<SuccessResponseDto> {
-    return new SuccessResponseDto();
+  @HealthCheck()
+  async healthcheck() {
+    return this.health.check([
+      () => this.prismaHealth.isHealthy('database'),
+      () => this.redisHealth.isHealthy('redis'),
+    ]);
   }
 }
