@@ -7,6 +7,7 @@ import {
   Put,
   UploadedFile,
   UseInterceptors,
+  ParseArrayPipe,
 } from '@nestjs/common';
 import { ChartAdminService } from './chart-admin.service';
 import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
@@ -43,9 +44,16 @@ export class ChartAdminController {
     return new SuccessResponseDto();
   }
 
+  @Post('/song/preview')
+  async previewSongs(@Body(new ParseArrayPipe({ items: NewSongDto })) newSongs: NewSongDto[]) {
+    return this.chartAdminService.previewSongs(newSongs);
+  }
+
   @Post('/song')
-  async createSong(@Body() newSongDto: NewSongDto):Promise<SuccessResponseDto> {
-    await this.chartAdminService.uploadSong(newSongDto);
+  async createSong(@Body(new ParseArrayPipe({ items: NewSongDto })) newSongs: NewSongDto[]): Promise<SuccessResponseDto> {
+    for (const song of newSongs) {
+      await this.chartAdminService.uploadSong(song);
+    }
     return new SuccessResponseDto();
   }
 
