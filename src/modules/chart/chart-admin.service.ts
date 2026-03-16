@@ -68,9 +68,146 @@ export class ChartAdminService {
     }
   }
 
+  /**
+   * JSON을 분석하여 저장 전 변경 내용을 반환합니다 (실제 저장 없음).
+   */
+  async previewSongs(songs: NewSongDto[]) {
+    return Promise.all(songs.map((song) => this.previewOneSong(song)));
+  }
+
+  private async previewOneSong(song: NewSongDto) {
+    const officialIdx = parseInt(song.songid, 10);
+
+    // 1. title로 DB 조회
+    const byTitle = await this.prisma.song.findFirst({
+      where: { title: song.title },
+      include: {
+        chart: { include: { radar: true }, orderBy: { idx: 'asc' } },
+      },
+    });
+
+    if (byTitle) {
+      // 업데이트 코스 — 차트 diff
+      const chartDiffs = song.difficulties.map((diff) => {
+        const existing = byTitle.chart.find(
+          (c) => c.level === diff.level && c.type === diff.type,
+        );
+        if (!existing) {
+          return { type: diff.type, level: diff.level, status: 'new' as const };
+        }
+        const changes: Record<string, { before: unknown; after: unknown }> = {};
+        const fields: Array<[string, unknown, unknown]> = [
+          ['effector',     existing.effector,     diff.effectorName],
+          ['illustrator',  existing.illustrator,  diff.illustratorName],
+          ['maxExscore',   existing.maxExscore,   parseInt(diff.max_exscore, 10) || 0],
+          ['maxChain',     existing.maxChain,     parseInt(diff.max_chain, 10) || 0],
+          ['chipCount',    existing.chipCount,    parseInt(diff.chip_count, 10) || 0],
+          ['holdCount',    existing.holdCount,    parseInt(diff.hold_count, 10) || 0],
+          ['tsumamiCount', existing.tsumamiCount, parseInt(diff.tsumami_count, 10) || 0],
+          ['level',        existing.level,        diff.level],
+        ];
+        for (const [key, before, after] of fields) {
+          if (String(before) !== String(after)) changes[key] = { before, after };
+        }
+        // radar diff
+        const r = existing.radar[0];
+        if (r) {
+          const radarFields: Array<[string, number, number]> = [
+            ['notes',    r.notes,    diff.radar.notes ?? 0],
+            ['peak',     r.peak,     diff.radar.peak ?? 0],
+            ['tsumami',  r.tsumami,  diff.radar.tsumami ?? 0],
+            ['tricky',   r.tricky,   diff.radar.tricky ?? 0],
+            ['handtrip', r.handtrip, diff.radar.handtrip ?? 0],
+            ['onehand',  r.onehand,  diff.radar.onehand ?? 0],
+          ];
+          for (const [key, before, after] of radarFields) {
+            if (before !== after) changes[`radar.${key}`] = { before, after };
+          }
+        }
+        return {
+          type: diff.type,
+          level: diff.level,
+          status: Object.keys(changes).length > 0 ? 'update' : 'nochange' as const,
+          changes,
+        };
+      });
+
+      return {
+        status: 'update' as const,
+        title: song.title,
+        existingIdx: byTitle.idx,
+        officialIdx,
+        charts: chartDiffs,
+      };
+    }
+
+    // 2. 신규 코스 — idx conflict 확인
+    const byIdx = await this.prisma.song.findUnique({
+      where: { idx: officialIdx },
+      select: { idx: true, title: true },
+    });
+    let resolvedIdx = officialIdx;
+    let idxConflict = false;
+    if (byIdx) {
+      const max = await this.prisma.song.findFirst({ orderBy: { idx: 'desc' }, select: { idx: true } });
+      resolvedIdx = (max?.idx ?? 0) + 1;
+      idxConflict = true;
+    }
+
+    return {
+      status: 'new' as const,
+      title: song.title,
+      officialIdx,
+      resolvedIdx,
+      idxConflict,
+      conflictWith: byIdx?.title ?? null,
+      charts: song.difficulties.map((d) => ({
+        type: d.type,
+        level: d.level,
+        status: 'new' as const,
+      })),
+    };
+  }
+
   async uploadSong(newSongDto: NewSongDto): Promise<void> {
-    console.log(newSongDto);
-    await this.songRepository.upsertSongData(newSongDto);
+    // difficulty별로 jacketArtPath를 S3에 업로드하고 URL을 교체
+    const difficultiesWithS3Jackets = await Promise.all(
+      newSongDto.difficulties.map(async (difficulty) => {
+        if (!difficulty.jacketArtPath) return difficulty;
+        try {
+          const s3Url = await this.uploadJacketFromUrl(
+            difficulty.jacketArtPath,
+            `${newSongDto.songid}_${difficulty.type}.jpg`,
+          );
+          return { ...difficulty, jacketArtPath: s3Url };
+        } catch (err) {
+          console.log(`❌ Jacket download failed for ${newSongDto.songid} [${difficulty.type}]:`, err?.message);
+          return difficulty;
+        }
+      }),
+    );
+
+    await this.songRepository.upsertSongData({
+      ...newSongDto,
+      difficulties: difficultiesWithS3Jackets,
+    });
+  }
+
+  /**
+   * 외부 URL에서 이미지를 다운받아 S3에 업로드하고 S3 URL 반환
+   */
+  private async uploadJacketFromUrl(imageUrl: string, key: string): Promise<string> {
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const contentType = response.headers['content-type'] ?? 'image/jpeg';
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: response.data,
+        ContentType: contentType,
+      }),
+    );
+    return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
   }
 
   async uploadJacketOne(
