@@ -3,25 +3,48 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
   ParseArrayPipe,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { AuthCheck } from 'src/common/decorator/auth-check.decorator';
 import { ChartAdminService } from './chart-admin.service';
 import { SuccessResponseDto } from 'src/common/dto/Success-response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfigProvider } from 'src/aws/config/multer.config';
 import { NewChartDto } from './dto/request/new-chart.dto';
 import { SongIdxWithTypeDto } from './dto/request/songIdx-with-type.dto';
+import { GreatestSongIdxResponseDto } from './dto/response/greatest-song-idx.response.dto';
+import { AdminSongQueryDto } from './dto/request/admin-song-query.dto';
+import { AdminAccountQueryDto } from './dto/request/admin-account-query.dto';
 import { NewSongDto } from './dto/request/new-song.dto';
 import { UpdateChartDto } from './dto/request/update-chart.dto';
-import { GreatestSongIdxResponseDto } from './dto/response/greatest-song-idx.response.dto';
 
+@ApiTags('Admin API')
 @Controller('admin')
+@AuthCheck(1)
 export class ChartAdminController {
   constructor(private readonly chartAdminService: ChartAdminService) {}
+
+  @Get('/song')
+  async getSongList(@Query() query: AdminSongQueryDto) {
+    return this.chartAdminService.getSongList(query);
+  }
+
+  @Get('/stats')
+  async getStats() {
+    return this.chartAdminService.getDashboardStats();
+  }
+
+  @Get('/account')
+  async getAccountList(@Query() query: AdminAccountQueryDto) {
+    return this.chartAdminService.getAccountList(query);
+  }
 
   @Get('/songIdx')
   async getGreatestIdx(): Promise<GreatestSongIdxResponseDto> {

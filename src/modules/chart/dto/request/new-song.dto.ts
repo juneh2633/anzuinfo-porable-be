@@ -105,4 +105,8 @@ export class NewSongDto {
   @ValidateNested({ each: true })
   @Type(() => DifficultyDto)
   difficulties: DifficultyDto[];
+
+  @IsOptional()
+  @IsString()
+  resolution?: 'OVERWRITE' | 'CREATE_NEW' | 'IGNORE';
 }

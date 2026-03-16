@@ -52,7 +52,7 @@ async function bootstrap() {
       'https://anzu-editor.vercel.app',
       'https://v0-vgc-ochre.vercel.app',
     ],
-    methods: 'GET,POST',
+    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
     allowedHeaders: 'Content-Type,Authorization',
   });
   const document = SwaggerModule.createDocument(app, config);

@@ -98,33 +98,51 @@ export class SongRepository {
   private async resolveTargetIdx(
     title: string,
     officialIdx: number,
+    resolution?: 'OVERWRITE' | 'CREATE_NEW' | 'IGNORE',
   ): Promise<{ idx: number; existingSongIdx: number | null }> {
-    // 1. title로 기존 곡 조회
+    // 1. ID로 조회
+    const byIdx = await this.prismaService.song.findUnique({
+      where: { idx: officialIdx },
+      select: { idx: true, title: true },
+    });
+
+    // 2. 제목으로 조회
     const byTitle = await this.prismaService.song.findFirst({
       where: { title },
-      select: { idx: true },
+      select: { idx: true, title: true },
     });
+
+    // 명시적인 해상도 전략이 있는 경우
+    if (resolution === 'OVERWRITE') {
+      const targetIdx = byIdx?.idx ?? byTitle?.idx;
+      if (targetIdx) {
+        return { idx: targetIdx, existingSongIdx: targetIdx };
+      }
+    }
+
+    if (resolution === 'CREATE_NEW') {
+      if (byIdx) {
+        const maxSong = await this.prismaService.song.findFirst({
+          select: { idx: true },
+          orderBy: { idx: 'desc' },
+        });
+        return { idx: (maxSong?.idx ?? 0) + 1, existingSongIdx: null };
+      }
+      return { idx: officialIdx, existingSongIdx: null };
+    }
+
+    // 기본 로직 (ID 우선 식별)
+    if (byIdx) {
+      return { idx: byIdx.idx, existingSongIdx: byIdx.idx };
+    }
+
+    // ID는 없지만 제목이 같은 경우 (사용자 의도에 따라 다를 수 있으나 기존 로직 호환을 위해 일단 유지)
+    // 단, 프론트에서 resolution을 보내주면 위의 'OVERWRITE'나 'CREATE_NEW'가 작동함
     if (byTitle) {
       return { idx: byTitle.idx, existingSongIdx: byTitle.idx };
     }
 
-    // 2. officialIdx가 비어있는지 확인
-    const byIdx = await this.prismaService.song.findUnique({
-      where: { idx: officialIdx },
-      select: { idx: true },
-    });
-    if (!byIdx) {
-      return { idx: officialIdx, existingSongIdx: null };
-    }
-
-    // 3. officialIdx가 이미 다른 곡에 점유 → max + 1
-    const maxSong = await this.prismaService.song.findFirst({
-      select: { idx: true },
-      orderBy: { idx: 'desc' },
-    });
-    const nextIdx = (maxSong?.idx ?? 0) + 1;
-    console.log(`⚠️ songId ${officialIdx} conflict for "${title}" → using idx ${nextIdx}`);
-    return { idx: nextIdx, existingSongIdx: null };
+    return { idx: officialIdx, existingSongIdx: null };
   }
 
   async upsertSongData(song: NewSongDto): Promise<void> {
@@ -140,8 +158,10 @@ export class SongRepository {
       その他: 9,
     };
 
+    if (song.resolution === 'IGNORE') return;
+
     const officialIdx = parseInt(song.songid, 10);
-    const { idx, existingSongIdx } = await this.resolveTargetIdx(song.title, officialIdx);
+    const { idx, existingSongIdx } = await this.resolveTargetIdx(song.title, officialIdx, song.resolution);
 
     const songData = {
       title: song.title,
@@ -301,5 +321,35 @@ export class SongRepository {
         console.log(`  ✅ Chart created: songIdx=${songIdx} [${difficulty.type} Lv.${difficulty.level}]`);
       }
     }
+  }
+
+  async selectSongListPaginated(keyword?: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+    const where = keyword
+      ? {
+          OR: [
+            { title: { contains: keyword, mode: 'insensitive' as const } },
+            { artist: { contains: keyword, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    const [items, total] = await Promise.all([
+      this.prismaService.song.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { idx: 'desc' },
+        include: {
+          chart: {
+            select: { type: true, level: true },
+            orderBy: { level: 'asc' },
+          },
+        },
+      }),
+      this.prismaService.song.count({ where }),
+    ]);
+
+    return { items, total };
   }
 }

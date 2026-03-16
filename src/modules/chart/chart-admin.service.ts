@@ -6,13 +6,15 @@ import { SongRepository } from './repository/song.repository';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 
 import axios from 'axios';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NewChartDto } from './dto/request/new-chart.dto';
 import { getTypeCode } from 'src/common/util/getTypeCode';
 import { SongIdxWithTypeDto } from './dto/request/songIdx-with-type.dto';
 import { NewSongDto } from './dto/request/new-song.dto';
 import { UpdateChartDto } from './dto/request/update-chart.dto';
 import { GreatestSongIdxEntity } from './entity/GreatestSongIdx.entity';
+import { AdminSongQueryDto } from './dto/request/admin-song-query.dto';
+import { AdminAccountQueryDto } from './dto/request/admin-account-query.dto';
 import * as crypto from 'crypto';
 import awsConfig from '../../aws/config/aws.config';
 
@@ -72,24 +74,94 @@ export class ChartAdminService {
    * JSON을 분석하여 저장 전 변경 내용을 반환합니다 (실제 저장 없음).
    */
   async previewSongs(songs: NewSongDto[]) {
-    return Promise.all(songs.map((song) => this.previewOneSong(song)));
+    const filteredSongs = songs.filter(song => !song.title.includes("I'm Your Treasure Box"));
+    return Promise.all(filteredSongs.map((song) => this.previewOneSong(song)));
+  }
+
+  async getSongList(query: AdminSongQueryDto) {
+    return this.songRepository.selectSongListPaginated(
+      query.keyword,
+      query.page,
+      query.limit,
+    );
+  }
+
+  async getAccountList(query: AdminAccountQueryDto) {
+    const skip = (query.page - 1) * query.limit;
+    const where = query.keyword
+      ? {
+          OR: [
+            { playerName: { contains: query.keyword, mode: 'insensitive' as const } },
+            { id: { contains: query.keyword, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    const [items, total] = await Promise.all([
+      this.prisma.account.findMany({
+        where,
+        skip,
+        take: query.limit,
+        orderBy: { idx: 'desc' },
+      }),
+      this.prisma.account.count({ where }),
+    ]);
+
+    return { items, total };
+  }
+
+  async getDashboardStats() {
+    const [songCount, chartCount, accountCount] = await Promise.all([
+      this.prisma.song.count(),
+      this.prisma.chart.count(),
+      this.prisma.account.count(),
+    ]);
+
+    return {
+      songs: songCount,
+      charts: chartCount,
+      accounts: accountCount,
+    };
   }
 
   private async previewOneSong(song: NewSongDto) {
     const officialIdx = parseInt(song.songid, 10);
 
-    // 1. title로 DB 조회
-    const byTitle = await this.prisma.song.findFirst({
-      where: { title: song.title },
-      include: {
-        chart: { include: { radar: true }, orderBy: { idx: 'asc' } },
-      },
-    });
+    const [byIdx, byTitle] = await Promise.all([
+      this.prisma.song.findUnique({
+        where: { idx: officialIdx },
+        include: { chart: { include: { radar: true }, orderBy: { idx: 'asc' } } },
+      }),
+      this.prisma.song.findFirst({
+        where: { title: song.title },
+        include: { chart: { include: { radar: true }, orderBy: { idx: 'asc' } } },
+      }),
+    ]);
 
-    if (byTitle) {
+    let conflictType: 'NONE' | 'ID_MATCH' | 'TITLE_MATCH' | 'PERFECT_MATCH' | 'MULTI_CONFLICT' = 'NONE';
+    let existingSong = byIdx;
+
+    if (byIdx && byTitle) {
+      if (byIdx.idx === byTitle.idx) {
+        conflictType = 'PERFECT_MATCH';
+      } else {
+        conflictType = 'MULTI_CONFLICT';
+      }
+    } else if (byIdx) {
+      conflictType = 'ID_MATCH';
+    } else if (byTitle) {
+      conflictType = 'TITLE_MATCH';
+      existingSong = byTitle;
+    }
+
+    if (existingSong) {
+      // 제목이 다른 경우 diff에 추가
+      const titleDiff = existingSong.title !== song.title ? { before: existingSong.title, after: song.title } : null;
+      const idxDiff = existingSong.idx !== officialIdx ? { before: existingSong.idx, after: officialIdx } : null;
+
       // 업데이트 코스 — 차트 diff
       const chartDiffs = song.difficulties.map((diff) => {
-        const existing = byTitle.chart.find(
+        const existing = existingSong.chart.find(
           (c) => c.level === diff.level && c.type === diff.type,
         );
         if (!existing) {
@@ -127,39 +199,35 @@ export class ChartAdminService {
         return {
           type: diff.type,
           level: diff.level,
-          status: Object.keys(changes).length > 0 ? 'update' : 'nochange' as const,
+          status: Object.keys(changes).length > 0 ? ('update' as const) : ('nochange' as const),
           changes,
         };
       });
 
+      // 업데이트 코스 결과 반환
       return {
-        status: 'update' as const,
+        status: chartDiffs.some((c) => c.status !== 'nochange') ? ('update' as const) : ('nochange' as const),
+        conflictType,
         title: song.title,
-        existingIdx: byTitle.idx,
         officialIdx,
+        existingIdx: existingSong.idx,
+        resolvedIdx: existingSong.idx,
+        idxConflict: conflictType === 'ID_MATCH' || conflictType === 'MULTI_CONFLICT',
+        conflictWith:
+          conflictType === 'ID_MATCH' || conflictType === 'MULTI_CONFLICT' ? byIdx?.title ?? null : null,
         charts: chartDiffs,
       };
     }
 
-    // 2. 신규 코스 — idx conflict 확인
-    const byIdx = await this.prisma.song.findUnique({
-      where: { idx: officialIdx },
-      select: { idx: true, title: true },
-    });
-    let resolvedIdx = officialIdx;
-    let idxConflict = false;
-    if (byIdx) {
-      const max = await this.prisma.song.findFirst({ orderBy: { idx: 'desc' }, select: { idx: true } });
-      resolvedIdx = (max?.idx ?? 0) + 1;
-      idxConflict = true;
-    }
-
+    // 2. 신규 코스 결과 반환
     return {
       status: 'new' as const,
+      conflictType,
       title: song.title,
       officialIdx,
-      resolvedIdx,
-      idxConflict,
+      existingIdx: null,
+      resolvedIdx: officialIdx,
+      idxConflict: conflictType === 'ID_MATCH' || conflictType === 'MULTI_CONFLICT',
       conflictWith: byIdx?.title ?? null,
       charts: song.difficulties.map((d) => ({
         type: d.type,
@@ -170,10 +238,32 @@ export class ChartAdminService {
   }
 
   async uploadSong(newSongDto: NewSongDto): Promise<void> {
-    // difficulty별로 jacketArtPath를 S3에 업로드하고 URL을 교체
+    if (newSongDto.title.includes("I'm Your Treasure Box")) {
+      console.log(`🚫 Skipping excluded song: ${newSongDto.title}`);
+      return;
+    }
+    // 1. 해당 곡의 기존 차트 데이터들을 미리 가져옴 (자켓 확인용)
+    const existingCharts = await this.prisma.chart.findMany({
+      where: { songIdx: parseInt(newSongDto.songid, 10) },
+      select: { type: true, jacket: true },
+    });
+
+    // 2. difficulty별로 jacketArtPath를 S3에 업로드하고 URL을 교체
     const difficultiesWithS3Jackets = await Promise.all(
       newSongDto.difficulties.map(async (difficulty) => {
         if (!difficulty.jacketArtPath) return difficulty;
+        
+        // 데이터베이스에 이미 S3 주소가 있는지 확인
+        const existing = existingCharts.find(c => c.type === difficulty.type);
+        if (existing?.jacket?.includes('.amazonaws.com')) {
+          return { ...difficulty, jacketArtPath: existing.jacket };
+        }
+
+        // 입력된 주소 자체가 이미 S3인 경우
+        if (difficulty.jacketArtPath.includes('.amazonaws.com')) {
+          return difficulty;
+        }
+
         try {
           const s3Url = await this.uploadJacketFromUrl(
             difficulty.jacketArtPath,
@@ -197,17 +287,45 @@ export class ChartAdminService {
    * 외부 URL에서 이미지를 다운받아 S3에 업로드하고 S3 URL 반환
    */
   private async uploadJacketFromUrl(imageUrl: string, key: string): Promise<string> {
-    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    const contentType = response.headers['content-type'] ?? 'image/jpeg';
-    await this.s3.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: response.data,
-        ContentType: contentType,
-      }),
-    );
-    return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    const s3Url = `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+    try {
+      // 1. 다운로드
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const contentType = response.headers['content-type'] ?? 'image/jpeg';
+
+      // 2. 업로드 (DB에서 이미 체크했으므로 여기선 바로 업로드)
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: response.data,
+          ContentType: contentType,
+        }),
+      );
+      return s3Url;
+    } catch (err) {
+      console.log(`⚠️ S3 upload failed for ${key}, falling back to original URL: ${err.message}`);
+      return imageUrl;
+    }
+  }
+
+  // 중복 확인은 이제 DB 레벨에서 처리하므로 이 메서드는 더 이상 사용하지 않거나 보조적으로만 사용됩니다.
+  private async checkS3ObjectExists(key: string): Promise<boolean> {
+    try {
+      await this.s3.send(
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+      return true;
+    } catch (error) {
+      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      throw error;
+    }
   }
 
   async uploadJacketOne(
