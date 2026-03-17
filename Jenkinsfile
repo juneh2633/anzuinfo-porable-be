@@ -60,13 +60,17 @@ pipeline {
                         sh '''
                             set -euo pipefail
                             
+                            echo "🚀 Syncing docker-compose.yml and docker/ config to ${PROD_SERVER_IP}..."
+                            scp -o StrictHostKeyChecking=no ${COMPOSE_FILE} ${PROD_SSH_USER}@${PROD_SERVER_IP}:${DEPLOY_DIR}/${COMPOSE_FILE}
+                            scp -r -o StrictHostKeyChecking=no docker/ ${PROD_SSH_USER}@${PROD_SERVER_IP}:${DEPLOY_DIR}/
+
                             echo "🚀 Triggering remote deployment on ${PROD_SERVER_IP}..."
                             ssh -o StrictHostKeyChecking=no ${PROD_SSH_USER}@${PROD_SERVER_IP} "
                                 cd ${DEPLOY_DIR} &&
                                 echo ${GH_TOKEN} | docker login ghcr.io -u ${GH_USER} --password-stdin &&
                                 docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
                                 export IMAGE_TAG=${IMAGE_TAG} &&
-                                docker compose -p anzuinfo-porable-be up -d --no-deps --force-recreate app
+                                docker compose -p anzuinfo-porable-be up -d --no-deps --force-recreate --remove-orphans app
                             "
                         '''
                     }
