@@ -6,13 +6,6 @@ export default defineConfig({
   plugins: [react()],
   base: '/admin/',
   server: {
-    port: 3001,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
+    port: 3001
   }
 })
