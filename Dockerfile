@@ -23,7 +23,7 @@ RUN yes | npx prisma generate
 
 # Copy the rest of the source code and build
 COPY . ./
-RUN npm run build anzu-info
+RUN npm run build
 
 # Runtime Stage
 FROM node:22-alpine AS runtime

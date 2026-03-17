@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: anzu-postgres
     restart: unless-stopped
     networks:
       - anzu_net
@@ -27,7 +26,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: anzu-redis
     restart: unless-stopped
     networks:
       - anzu_net
@@ -46,7 +44,6 @@ services:
 
   app:
     image: ghcr.io/juneh2633/anzu-info:${IMAGE_TAG:-latest}
-    container_name: anzu-info
     restart: unless-stopped
     networks:
       - anzu_net
@@ -70,7 +67,6 @@ services:
 
   nginx:
     image: 'jc21/nginx-proxy-manager:latest'
-    container_name: anzu-npm
     restart: unless-stopped
     networks:
       - anzu_net
