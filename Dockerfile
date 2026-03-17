@@ -9,12 +9,20 @@ RUN npm run build
 # Build Stage - NestJS Backend
 FROM node:22-alpine AS builder
 WORKDIR /usr/src/app
-COPY package*.json ./
-COPY . ./
-# Install native build dependencies for bcrypt and other gyp packages on Alpine
+
+# Install native build dependencies first
 RUN apk add --no-cache python3 make g++
+
+# Install dependencies before copying source code to leverage cache
+COPY package*.json ./
 RUN npm ci
+
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
 RUN yes | npx prisma generate
+
+# Copy the rest of the source code and build
+COPY . ./
 RUN npm run build anzu-info
 
 # Runtime Stage
