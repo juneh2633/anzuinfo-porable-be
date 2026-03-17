@@ -30,7 +30,7 @@ export default function AccountManagementPage() {
         keyword: search,
       });
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${API_BASE_URL}/api/admin/account?${query}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/account?${query}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();

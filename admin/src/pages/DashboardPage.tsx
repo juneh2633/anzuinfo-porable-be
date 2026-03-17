@@ -20,7 +20,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem('admin_token');
     
     // Stats Fetch
-    fetch(`${API_BASE_URL}/api/admin/stats`, {
+    fetch(`${API_BASE_URL}/admin/stats`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.ok ? res.json() : null)
@@ -28,7 +28,7 @@ export default function DashboardPage() {
       .catch(console.error);
 
     // Health Fetch
-    fetch(`${API_BASE_URL}/api/healthcheck`)
+    fetch(`${API_BASE_URL}/healthcheck`)
       .then(res => res.json())
       .then(data => setHealthData(data))
       .catch(console.error)

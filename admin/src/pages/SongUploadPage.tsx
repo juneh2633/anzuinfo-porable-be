@@ -63,7 +63,7 @@ export default function SongUploadPage() {
       const json = JSON.parse(text);
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${API_BASE_URL}/api/admin/song/preview`, {
+      const response = await fetch(`${API_BASE_URL}/admin/song/preview`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export default function SongUploadPage() {
 
         setCurrentSong(song.title);
         
-        const response = await fetch('/api/admin/song', {
+        const response = await fetch(`${API_BASE_URL}/admin/song`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
