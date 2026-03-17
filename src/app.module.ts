@@ -15,8 +15,11 @@ import { AwsModule } from './aws/aws.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'static'),
+      rootPath: join(__dirname, '..', '..', 'static'),
       serveRoot: '/static',
+    }, {
+      rootPath: join(__dirname, '..', '..', 'admin', 'dist'),
+      serveRoot: '/admin',
     }),
     ConfigModule.forRoot({
       isGlobal: true,
