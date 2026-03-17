@@ -8,6 +8,8 @@ db.erd
 /dist
 /node_modules
 /build
+/admin/dist
+/admin/node_modules
 
 # Logs
 logs
