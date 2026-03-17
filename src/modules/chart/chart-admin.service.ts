@@ -126,6 +126,19 @@ export class ChartAdminService {
 
   private async previewOneSong(song: NewSongDto) {
     const officialIdx = parseInt(song.songid, 10);
+    if (isNaN(officialIdx)) {
+      return {
+        status: 'nochange' as const,
+        conflictType: 'NONE' as const,
+        title: song.title,
+        officialIdx: 0,
+        existingIdx: null,
+        resolvedIdx: 0,
+        idxConflict: false,
+        conflictWith: null,
+        charts: [],
+      };
+    }
 
     const [byIdx, byTitle] = await Promise.all([
       this.prisma.song.findUnique({
@@ -185,12 +198,12 @@ export class ChartAdminService {
         const r = existing.radar[0];
         if (r) {
           const radarFields: Array<[string, number, number]> = [
-            ['notes',    r.notes,    diff.radar.notes ?? 0],
-            ['peak',     r.peak,     diff.radar.peak ?? 0],
-            ['tsumami',  r.tsumami,  diff.radar.tsumami ?? 0],
-            ['tricky',   r.tricky,   diff.radar.tricky ?? 0],
-            ['handtrip', r.handtrip, diff.radar.handtrip ?? 0],
-            ['onehand',  r.onehand,  diff.radar.onehand ?? 0],
+            ['notes',    r.notes,    diff.radar?.notes ?? 0],
+            ['peak',     r.peak,     diff.radar?.peak ?? 0],
+            ['tsumami',  r.tsumami,  diff.radar?.tsumami ?? 0],
+            ['tricky',   r.tricky,   diff.radar?.tricky ?? 0],
+            ['handtrip', r.handtrip, diff.radar?.handtrip ?? 0],
+            ['onehand',  r.onehand,  diff.radar?.onehand ?? 0],
           ];
           for (const [key, before, after] of radarFields) {
             if (before !== after) changes[`radar.${key}`] = { before, after };
