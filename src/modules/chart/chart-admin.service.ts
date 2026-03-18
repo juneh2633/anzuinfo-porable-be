@@ -75,7 +75,11 @@ export class ChartAdminService {
    */
   async previewSongs(songs: NewSongDto[]) {
     const filteredSongs = songs.filter(song => !song.title.includes("I'm Your Treasure Box"));
-    return Promise.all(filteredSongs.map((song) => this.previewOneSong(song)));
+    const results = [];
+    for (const song of filteredSongs) {
+      results.push(await this.previewOneSong(song));
+    }
+    return results;
   }
 
   async getSongList(query: AdminSongQueryDto) {
