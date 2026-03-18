@@ -46,7 +46,9 @@ services:
     image: ghcr.io/juneh2633/anzu-info:${IMAGE_TAG:-latest}
     restart: unless-stopped
     networks:
-      - anzu_net
+      anzu_net:
+        aliases:
+          - anzu-info
     deploy:
       resources:
         limits:
