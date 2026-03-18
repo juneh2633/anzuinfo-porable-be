@@ -117,9 +117,17 @@ export default function SongUploadPage() {
         const song = json[i];
         const preview = previews.find(p => p.officialIdx === parseInt(song.songid, 10)); // Use officialIdx for matching
         const resolution = resolutions[parseInt(song.songid, 10)];
+        const isConflict = preview && preview.conflictType !== 'NONE' && preview.conflictType !== 'PERFECT_MATCH';
 
-        // 변경사항이 없는 곡이거나 IGNORE 선택 시 건너뜀
-        if (resolution === 'IGNORE' || (!preview || (preview.status === 'nochange' && !resolution))) {
+        // 스킵할 조건:
+        // 1. 유저가 명시적으로 IGNORE를 누른 경우
+        // 2. 충돌이 있는 곡인데, 유저가 아무 버튼도 누르지 않은 경우 (미선택 시 업로드 방지)
+        // 3. 프리뷰 결과가 없거나, 변경사항이 없는 경우
+        if (
+          resolution === 'IGNORE' || 
+          (isConflict && !resolution) ||
+          (!preview || (preview.status === 'nochange' && !resolution))
+        ) {
           setProgress(Math.round(((i + 1) / total) * 100));
           continue;
         }

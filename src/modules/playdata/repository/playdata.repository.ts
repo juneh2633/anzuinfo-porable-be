@@ -332,4 +332,26 @@ export class PlaydataRepository {
       }
     });
   }
+
+  async findChartByTitleArtistType(
+    title: string,
+    artist: string,
+    type: string,
+  ): Promise<{ idx: number; level: number } | null> {
+    const chart = await this.prismaService.chart.findFirst({
+      where: {
+        type: type,
+        song: {
+          title: title,
+          artist: artist,
+        },
+      },
+      select: {
+        idx: true,
+        level: true,
+      },
+    });
+
+    return chart;
+  }
 }
