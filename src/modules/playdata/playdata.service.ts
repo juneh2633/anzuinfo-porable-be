@@ -56,37 +56,21 @@ export class PlaydataService {
           .update(typeAndTitle, 'utf8')
           .digest('hex');
         let chartIdxWithLevel = '';
-        if (cleanTitle === 'Prayer' && artist === 'ぺのれり') {
-          if (chartType === 'novice') {
-            chartIdxWithLevel = '2521@@6';
-          } else if (chartType === 'advanced') {
-            chartIdxWithLevel = '2522@@12';
-          } else {
-            chartIdxWithLevel = '2523@@18.3';
-          }
-        } else if (cleanTitle === 'Prayer') {
-          if (chartType === 'novice') {
-            chartIdxWithLevel = '7231@@6';
-          } else if (chartType === 'advanced') {
-            chartIdxWithLevel = '7232@@12';
-          } else if (chartType === 'exhaust') {
-            chartIdxWithLevel = '7233@@15';
-          } else {
-            chartIdxWithLevel = '7234@@18.2';
+        const collisionTitles = ['Prayer', 'カジノファイヤーことみちゃん', '朱と碧のランページ'];
+
+        if (collisionTitles.includes(cleanTitle)) {
+          const chart = await this.playdataRepository.findChartByTitleArtistType(cleanTitle, artist, chartType);
+          if (chart) {
+            chartIdxWithLevel = `${chart.idx}@@${chart.level}`;
           }
         } else {
           chartIdxWithLevel = await this.redisService.get(safeKey);
         }
 
-        if(cleanTitle === 'カジノファイヤーことみちゃん' && artist === 'covered by 一条莉々華(ReGLOSS)'){
-          if(chartType === 'maximum'){
-            chartIdxWithLevel = '8094@@18'
-          }
-        }
-
-        if(cleanTitle === '朱と碧のランページ' && artist === 'covered by 儒烏風亭らでん(ReGLOSS)'){
-          if(chartType === 'maximum'){
-            chartIdxWithLevel = '8096@@17'
+        if (!chartIdxWithLevel) {
+          const chart = await this.playdataRepository.findChartByTitleArtistType(cleanTitle, artist, chartType);
+          if (chart) {
+            chartIdxWithLevel = `${chart.idx}@@${chart.level}`;
           }
         }
 
