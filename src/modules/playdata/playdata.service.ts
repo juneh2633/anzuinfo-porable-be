@@ -73,8 +73,7 @@ export class PlaydataService {
             chartIdxWithLevel = `${chart.idx}@@${chart.level}`;
           }
         }
-
-        if (chartIdxWithLevel === null) {
+        if (!chartIdxWithLevel) {
           console.log(chartIdxWithLevel, title);
           continue;
         }
