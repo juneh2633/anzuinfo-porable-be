@@ -338,20 +338,48 @@ export class PlaydataRepository {
     artist: string,
     type: string,
   ): Promise<{ idx: number; level: number } | null> {
-    const chart = await this.prismaService.chart.findFirst({
+    const charts = await this.prismaService.chart.findMany({
       where: {
         type: type,
         song: {
           title: title,
-          artist: artist,
         },
       },
       select: {
         idx: true,
         level: true,
+        song: {
+          select: {
+            artist: true,
+          },
+        },
       },
     });
 
-    return chart;
+    if (charts.length === 0) return null;
+    if (charts.length === 1) return { idx: charts[0].idx, level: charts[0].level };
+
+    // 1. Exact match
+    const exactMatch = charts.find(c => c.song?.artist === artist);
+    if (exactMatch) return { idx: exactMatch.idx, level: exactMatch.level };
+
+    // Helper for fuzzy string matching
+    const cleanStr = (s: string) => s.replace(/\\s+/g, '').toLowerCase();
+    const targetArtist = cleanStr(artist);
+
+    // 2. Cleaned exact match
+    const cleanMatch = charts.find(c => c.song?.artist && cleanStr(c.song.artist) === targetArtist);
+    if (cleanMatch) return { idx: cleanMatch.idx, level: cleanMatch.level };
+
+    // 3. Contains match (DB string contains scraper string)
+    const containsMatch1 = charts.find(c => c.song?.artist && cleanStr(c.song.artist).includes(targetArtist));
+    if (containsMatch1) return { idx: containsMatch1.idx, level: containsMatch1.level };
+
+    // 4. Contains match (Scraper string contains DB string)
+    const containsMatch2 = charts.find(c => c.song?.artist && targetArtist.includes(cleanStr(c.song.artist)));
+    if (containsMatch2) return { idx: containsMatch2.idx, level: containsMatch2.level };
+
+    // Fallback if we still couldn't resolve perfectly (better to save than drop)
+    return { idx: charts[0].idx, level: charts[0].level };
   }
 }
