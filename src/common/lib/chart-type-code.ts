@@ -9,4 +9,5 @@ export enum ChartTypeCode {
   vivid = 8,
   exceed = 9,
   ultimate = 10,
+  nabla =11,
 }

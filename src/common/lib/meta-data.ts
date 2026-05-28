@@ -17,7 +17,7 @@ export const metaData = {
       color: 16421125,
     },
     {
-      versionName: 'Heavenly Haven', 
+      versionName: 'Heavenly Haven',
       color: 45296,
     },
     {
@@ -27,6 +27,10 @@ export const metaData = {
     {
       versionName: 'Exceed Gear',
       color: 1351423,
+    },
+    {
+      versionName: 'Nabla',
+      color: 9821443,
     },
   ],
   type: [
@@ -79,6 +83,11 @@ export const metaData = {
       typeName: 'ultimate',
       typeShortName: 'ult',
       color: 16768343,
+    },
+    {
+      typeName: 'nabla',
+      typeShortName: 'nbl',
+      color: 9821443,
     },
   ],
   rank: [
