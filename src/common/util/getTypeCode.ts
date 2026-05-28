@@ -23,6 +23,8 @@ export function getTypeCode(type: string): number {
       return ChartTypeCode.exceed;
     case 'ultimate':
       return ChartTypeCode.ultimate;
+    case 'nabla':
+      return ChartTypeCode.nabla;
     default:
       throw new NotFoundException(`Unknown chart type: ${type}`);
   }
