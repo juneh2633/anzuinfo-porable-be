@@ -112,7 +112,7 @@ export class ChartService {
       where: {
         level: {
           gte: minLevel,
-          lte: maxLevel,
+          lt: maxLevel + 1,
         },
         deletedAt: null,
         song: {
@@ -149,7 +149,7 @@ export class ChartService {
       where: {
         level: {
           gte: minLevel,
-          lte: maxLevel,
+          lt: maxLevel + 1,
         },
         deletedAt: null,
         song: {
@@ -207,7 +207,7 @@ export class ChartService {
       where: {
         level: {
           gte: minLevel,
-          lte: maxLevel,
+          lt: maxLevel + 1,
         },
         deletedAt: null,
         song: {
