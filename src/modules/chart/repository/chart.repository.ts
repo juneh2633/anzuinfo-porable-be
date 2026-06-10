@@ -161,4 +161,15 @@ export class ChartRepository {
       },
     });
   }
+
+  async updateJacketByChartIdx(chartIdx: number, jacketUrl: string): Promise<void> {
+    await this.prismaService.chart.update({
+      where: {
+        idx: chartIdx,
+      },
+      data: {
+        jacket: jacketUrl,
+      },
+    });
+  }
 }

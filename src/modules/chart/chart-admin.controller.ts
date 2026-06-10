@@ -24,6 +24,7 @@ import { AdminSongQueryDto } from './dto/request/admin-song-query.dto';
 import { AdminAccountQueryDto } from './dto/request/admin-account-query.dto';
 import { NewSongDto } from './dto/request/new-song.dto';
 import { UpdateChartDto } from './dto/request/update-chart.dto';
+import { JacketUrlDto } from './dto/request/jacket-url.dto';
 
 @ApiTags('Admin API')
 @Controller('admin')
@@ -65,6 +66,17 @@ export class ChartAdminController {
     }
     await this.chartAdminService.uploadJacketOne(songIdxWithTypeDto, file);
     return new SuccessResponseDto();
+  }
+
+  @Post('/jacket/url')
+  async createJacketFromUrl(@Body() jacketUrlDto: JacketUrlDto) {
+    const jacket = await this.chartAdminService.uploadJacketUrlOne(jacketUrlDto);
+    return { message: 'success', jacket };
+  }
+
+  @Post('/jacket/migrate')
+  async migrateExternalJackets() {
+    return this.chartAdminService.migrateExternalJackets();
   }
 
   @Post('/song/preview')
