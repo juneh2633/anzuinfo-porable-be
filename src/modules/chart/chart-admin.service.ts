@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ChartRepository } from './repository/chart.repository';
 import { RadarRepository } from './repository/radar.repository';
 
@@ -17,6 +17,7 @@ import { AdminSongQueryDto } from './dto/request/admin-song-query.dto';
 import { AdminAccountQueryDto } from './dto/request/admin-account-query.dto';
 import * as crypto from 'crypto';
 import awsConfig from '../../aws/config/aws.config';
+import { JacketUrlDto } from './dto/request/jacket-url.dto';
 
 @Injectable()
 export class ChartAdminService {
@@ -368,6 +369,166 @@ export class ChartAdminService {
       songIdxWithTypeDto.type,
       s3Url,
     );
+  }
+
+  async uploadJacketUrlOne(jacketUrlDto: JacketUrlDto): Promise<string> {
+    const songIdx = parseInt(jacketUrlDto.songIdx, 10);
+    if (Number.isNaN(songIdx)) {
+      throw new BadRequestException('songIdx must be a number');
+    }
+
+    const charts = await this.chartRepository.selectChartBySongIdx(songIdx);
+    const matchedCharts = charts.filter((chart) => chart.type === jacketUrlDto.type);
+    if (matchedCharts.length === 0) {
+      throw new NotFoundException('Chart not found');
+    }
+
+    const sourceUrl = this.normalizeImageUrl(jacketUrlDto.sourceUrl);
+    const jacket = this.isOwnS3Url(sourceUrl)
+      ? sourceUrl
+      : await this.uploadExternalJacketToS3(
+          sourceUrl,
+          `${jacketUrlDto.songIdx}_${jacketUrlDto.type}`,
+        );
+
+    await this.chartRepository.updateJacketBySongIdxAndType(
+      songIdx,
+      jacketUrlDto.type,
+      jacket,
+    );
+
+    return jacket;
+  }
+
+  async migrateExternalJackets(): Promise<{
+    message: string;
+    total: number;
+    migrated: number;
+    skipped: number;
+    failed: number;
+    failures: Array<{ chartIdx: number; reason: string }>;
+  }> {
+    const charts = await this.chartRepository.selectChartAll();
+    const failures: Array<{ chartIdx: number; reason: string }> = [];
+    let migrated = 0;
+    let skipped = 0;
+
+    for (const chart of charts) {
+      if (!chart.jacket) {
+        skipped++;
+        continue;
+      }
+
+      let sourceUrl: string;
+      try {
+        sourceUrl = this.normalizeImageUrl(chart.jacket);
+      } catch (error) {
+        failures.push({ chartIdx: chart.idx, reason: error.message });
+        continue;
+      }
+
+      if (this.isOwnS3Url(sourceUrl)) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        const jacket = await this.uploadExternalJacketToS3(
+          sourceUrl,
+          `${chart.songIdx}_${chart.type ?? 'unknown'}`,
+        );
+        await this.chartRepository.updateJacketByChartIdx(chart.idx, jacket);
+        migrated++;
+      } catch (error) {
+        failures.push({ chartIdx: chart.idx, reason: error.message });
+      }
+    }
+
+    return {
+      message: 'success',
+      total: charts.length,
+      migrated,
+      skipped,
+      failed: failures.length,
+      failures,
+    };
+  }
+
+  private ensureAwsConfig(): void {
+    if (!this.bucket) {
+      throw new BadRequestException('AWS_BUCKET environment variable is required');
+    }
+    if (!process.env.AWS_REGION) {
+      throw new BadRequestException('AWS_REGION environment variable is required');
+    }
+  }
+
+  private normalizeImageUrl(rawUrl: string): string {
+    let url = rawUrl.trim();
+    for (let i = 0; i < 2; i++) {
+      try {
+        const decoded = decodeURIComponent(url);
+        if (decoded === url) break;
+        url = decoded;
+      } catch {
+        break;
+      }
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new BadRequestException('Invalid image URL');
+    }
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new BadRequestException('Only http and https URLs are supported');
+    }
+
+    return parsed.toString();
+  }
+
+  private isOwnS3Url(url: string): boolean {
+    if (!this.bucket || !process.env.AWS_REGION) return false;
+    const parsed = new URL(url);
+    return parsed.hostname === `${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+  }
+
+  private getImageExtension(imageUrl: string, contentType?: string): string {
+    const typeExtension = contentType?.split(';')[0].trim().split('/')[1];
+    if (typeExtension === 'jpeg') return 'jpg';
+    if (typeExtension && /^[a-z0-9]+$/i.test(typeExtension)) return typeExtension;
+
+    const pathname = new URL(imageUrl).pathname;
+    const extension = pathname.split('.').pop();
+    if (extension && /^[a-z0-9]+$/i.test(extension)) return extension;
+
+    return 'jpg';
+  }
+
+  private async uploadExternalJacketToS3(imageUrl: string, keyBase: string): Promise<string> {
+    this.ensureAwsConfig();
+
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const contentType = response.headers['content-type'] ?? 'image/jpeg';
+    if (!contentType.startsWith('image/')) {
+      throw new BadRequestException('URL does not point to an image');
+    }
+
+    const extension = this.getImageExtension(imageUrl, contentType);
+    const key = `${keyBase}.${extension}`;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: response.data,
+        ContentType: contentType,
+      }),
+    );
+
+    return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
   }
 
   async uploadChartOne(newChartDto: NewChartDto): Promise<void> {
