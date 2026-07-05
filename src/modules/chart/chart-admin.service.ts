@@ -18,6 +18,7 @@ import { AdminAccountQueryDto } from './dto/request/admin-account-query.dto';
 import * as crypto from 'crypto';
 import awsConfig from '../../aws/config/aws.config';
 import { JacketUrlDto } from './dto/request/jacket-url.dto';
+import { SongWithChartEntity } from './entity/SongWithChart.entity';
 
 @Injectable()
 export class ChartAdminService {
@@ -118,7 +119,7 @@ export class ChartAdminService {
   async getDashboardStats() {
     const [songCount, chartCount, accountCount] = await Promise.all([
       this.prisma.song.count(),
-      this.prisma.chart.count(),
+      this.prisma.chart.count({ where: { deletedAt: null } }),
       this.prisma.account.count(),
     ]);
 
@@ -148,11 +149,11 @@ export class ChartAdminService {
     const [byIdx, byTitle] = await Promise.all([
       this.prisma.song.findUnique({
         where: { idx: officialIdx },
-        include: { chart: { include: { radar: true }, orderBy: { idx: 'asc' } } },
+        include: { chart: { where: { deletedAt: null }, include: { radar: true }, orderBy: { idx: 'asc' } } },
       }),
       this.prisma.song.findFirst({
         where: { title: song.title },
-        include: { chart: { include: { radar: true }, orderBy: { idx: 'asc' } } },
+        include: { chart: { where: { deletedAt: null }, include: { radar: true }, orderBy: { idx: 'asc' } } },
       }),
     ]);
 
@@ -262,7 +263,7 @@ export class ChartAdminService {
     }
     // 1. 해당 곡의 기존 차트 데이터들을 미리 가져옴 (자켓 확인용)
     const existingCharts = await this.prisma.chart.findMany({
-      where: { songIdx: parseInt(newSongDto.songid, 10) },
+      where: { songIdx: parseInt(newSongDto.songid, 10), deletedAt: null },
       select: { type: true, jacket: true },
     });
 
@@ -583,6 +584,8 @@ export class ChartAdminService {
       throw new NotFoundException('존재하지 않는 차트입니다.');
     }
 
+    const existingSong = await this.songRepository.selectSongByIdx(existingChart.songIdx);
+
     // 곡이 존재하는지 확인
     const song = await this.songRepository.selectSongByIdx(songIdx);
     if (!song) {
@@ -602,8 +605,50 @@ export class ChartAdminService {
       radar,
     );
 
+    if (existingSong) {
+      await this.chartRepository.deleteChartIdx(
+        this.getChartCacheKey(existingChart.type, existingSong.title),
+      );
+    }
+
     // 차트 수정 후 캐시 업데이트
     await this.cacheSingleChart(chartIdx, type, song.title, level);
+  }
+
+  async deleteChartOne(chartIdx: number): Promise<void> {
+    const chart = await this.chartRepository.selectChartByIdx(chartIdx);
+    if (!chart) {
+      throw new NotFoundException('Chart not found');
+    }
+
+    const song = await this.songRepository.selectSongByIdx(chart.songIdx);
+    if (!song) {
+      throw new NotFoundException('Song not found');
+    }
+
+    await this.chartRepository.softDeleteChartByIdx(chartIdx);
+    await this.chartRepository.deleteChartIdx(
+      this.getChartCacheKey(chart.type, song.title),
+    );
+
+    const songs = await this.songRepository.selectSongAll();
+    await this.songRepository.setMetaData(SongWithChartEntity.createMany(songs));
+  }
+
+  private getChartCacheKey(type: string | null, title: string): string {
+    const normalizedType =
+      type === 'novice' ||
+      type === 'advanced' ||
+      type === 'exhaust' ||
+      type === 'maximum' ||
+      type === 'ultimate'
+        ? type
+        : 'infinite';
+    const cleanTitle = title.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+    return crypto
+      .createHash('sha256')
+      .update(`${normalizedType}____${cleanTitle}`, 'utf8')
+      .digest('hex');
   }
 
   /**
@@ -621,11 +666,7 @@ export class ChartAdminService {
       type = 'infinite';
     }
 
-    const typeAndTitle = type + '____' + title;
-    const safeKey = crypto
-      .createHash('sha256')
-      .update(typeAndTitle, 'utf8')
-      .digest('hex');
+    const safeKey = this.getChartCacheKey(type, title);
     const idxWithLevel = chartIdx.toString() + '@@' + level.toString();
     
     await this.chartRepository.setChartIdx(idxWithLevel, safeKey);

@@ -41,6 +41,7 @@ export class SongRepository {
     return this.prismaService.song.findMany({
       include: {
         chart: {
+          where: { deletedAt: null },
           include: {
             radar: true,
           },
@@ -257,6 +258,7 @@ export class SongRepository {
           songIdx,
           level: difficulty.level,
           type: difficulty.type,
+          deletedAt: null,
         },
         include: { radar: true },
       });
@@ -342,7 +344,25 @@ export class SongRepository {
         orderBy: { idx: 'desc' },
         include: {
           chart: {
-            select: { type: true, level: true },
+            where: { deletedAt: null },
+            select: {
+              idx: true,
+              type: true,
+              level: true,
+              effector: true,
+              illustrator: true,
+              radar: {
+                select: {
+                  notes: true,
+                  peak: true,
+                  tsumami: true,
+                  tricky: true,
+                  handtrip: true,
+                  onehand: true,
+                },
+                take: 1,
+              },
+            },
             orderBy: { level: 'asc' },
           },
         },

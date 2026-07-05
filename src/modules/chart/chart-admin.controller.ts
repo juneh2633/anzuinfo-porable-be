@@ -2,8 +2,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -101,6 +103,14 @@ export class ChartAdminController {
   @Put('/chart')
   async updateChart(@Body() updateChartDto: UpdateChartDto): Promise<SuccessResponseDto> {
     await this.chartAdminService.updateChartOne(updateChartDto);
+    return new SuccessResponseDto();
+  }
+
+  @Delete('/chart/:chartIdx')
+  async deleteChart(
+    @Param('chartIdx', ParseIntPipe) chartIdx: number,
+  ): Promise<SuccessResponseDto> {
+    await this.chartAdminService.deleteChartOne(chartIdx);
     return new SuccessResponseDto();
   }
 }
