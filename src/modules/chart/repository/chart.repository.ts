@@ -14,6 +14,7 @@ export class ChartRepository {
     const chart = await this.prismaService.chart.findFirst({
       where: {
         idx: idx,
+        deletedAt: null,
       },
     });
     return chart;
@@ -23,6 +24,7 @@ export class ChartRepository {
     const chartList = await this.prismaService.chart.findMany({
       where: {
         songIdx: songIdx,
+        deletedAt: null,
       },
     });
     return chartList;
@@ -30,6 +32,7 @@ export class ChartRepository {
 
   async selectTypeWithTitle(): Promise<any[]> {
     const chartList = await this.prismaService.chart.findMany({
+      where: { deletedAt: null },
       select: {
         idx: true,
         type: true,
@@ -44,11 +47,22 @@ export class ChartRepository {
   }
 
   async selectChartAll(): Promise<Chart[]> {
-    return await this.prismaService.chart.findMany({});
+    return await this.prismaService.chart.findMany({ where: { deletedAt: null } });
   }
 
   async setChartIdx(idxWithLevel: string, typeAndTitle: string): Promise<void> {
     await this.redisService.set(typeAndTitle, idxWithLevel);
+  }
+
+  async deleteChartIdx(typeAndTitle: string): Promise<void> {
+    await this.redisService.delete(typeAndTitle);
+  }
+
+  async softDeleteChartByIdx(chartIdx: number): Promise<void> {
+    await this.prismaService.chart.update({
+      where: { idx: chartIdx },
+      data: { deletedAt: new Date() },
+    });
   }
 
   async insertChartBySongIdx(

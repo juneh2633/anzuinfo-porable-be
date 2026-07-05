@@ -1,15 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, Edit3, Trash2, Filter, Music } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Edit3, Trash2, Filter, Music, Save, X } from 'lucide-react';
+
+interface RadarValues {
+  notes: number;
+  peak: number;
+  tsumami: number;
+  tricky: number;
+  handtrip: number;
+  onehand: number;
+}
+
+interface SongChart {
+  idx: number;
+  type: string;
+  level: number;
+  effector: string | null;
+  illustrator: string;
+  radar: RadarValues[];
+}
 
 interface SongListSong {
   idx: number;
   title: string;
   artist: string;
   version: number;
-  chart: {
-    type: string;
-    level: number;
-  }[];
+  chart: SongChart[];
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -20,6 +35,10 @@ export default function SongManagementPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [deletingChartIdx, setDeletingChartIdx] = useState<number | null>(null);
+  const [editingSong, setEditingSong] = useState<SongListSong | null>(null);
+  const [chartDrafts, setChartDrafts] = useState<Record<number, SongChart>>({});
+  const [savingChartIdx, setSavingChartIdx] = useState<number | null>(null);
   const limit = 15;
 
   const fetchSongs = async () => {
@@ -52,6 +71,104 @@ export default function SongManagementPage() {
   }, [page, search]);
 
   const totalPages = Math.ceil(total / limit);
+
+  const deleteChart = async (chartIdx: number, chartLabel: string) => {
+    if (!window.confirm(`Delete chart ${chartLabel}?`)) return;
+
+    setDeletingChartIdx(chartIdx);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`${API_BASE_URL}/admin/chart/${chartIdx}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`Delete failed (${response.status})`);
+      setEditingSong(current => current ? {
+        ...current,
+        chart: current.chart.filter(chart => chart.idx !== chartIdx),
+      } : null);
+      setSongs(current => current.map(song => ({
+        ...song,
+        chart: song.chart.filter(chart => chart.idx !== chartIdx),
+      })));
+    } catch (err) {
+      console.error('Failed to delete chart:', err);
+      window.alert('Failed to delete the chart. Please try again.');
+    } finally {
+      setDeletingChartIdx(null);
+    }
+  };
+
+  const openChartEditor = (song: SongListSong) => {
+    setEditingSong(song);
+    setChartDrafts(Object.fromEntries(song.chart.map(chart => [chart.idx, {
+      ...chart,
+      radar: [{
+        notes: chart.radar[0]?.notes ?? 0,
+        peak: chart.radar[0]?.peak ?? 0,
+        tsumami: chart.radar[0]?.tsumami ?? 0,
+        tricky: chart.radar[0]?.tricky ?? 0,
+        handtrip: chart.radar[0]?.handtrip ?? 0,
+        onehand: chart.radar[0]?.onehand ?? 0,
+      }],
+    }])));
+  };
+
+  const updateChartDraft = (chartIdx: number, field: keyof SongChart, value: string | number) => {
+    setChartDrafts(current => ({
+      ...current,
+      [chartIdx]: { ...current[chartIdx], [field]: value },
+    }));
+  };
+
+  const updateRadarDraft = (chartIdx: number, field: keyof RadarValues, value: number) => {
+    setChartDrafts(current => ({
+      ...current,
+      [chartIdx]: {
+        ...current[chartIdx],
+        radar: [{ ...current[chartIdx].radar[0], [field]: value }],
+      },
+    }));
+  };
+
+  const saveChart = async (chart: SongChart) => {
+    if (!editingSong) return;
+    setSavingChartIdx(chart.idx);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`${API_BASE_URL}/admin/chart`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          chartIdx: chart.idx,
+          songIdx: editingSong.idx,
+          level: chart.level,
+          type: chart.type,
+          effectorName: chart.effector ?? '',
+          illustratorName: chart.illustrator ?? '',
+          radar: chart.radar[0],
+        }),
+      });
+      if (!response.ok) throw new Error(`Update failed (${response.status})`);
+
+      setEditingSong(current => current ? {
+        ...current,
+        chart: current.chart.map(item => item.idx === chart.idx ? chart : item),
+      } : null);
+      setSongs(current => current.map(song => song.idx === editingSong.idx ? {
+        ...song,
+        chart: song.chart.map(item => item.idx === chart.idx ? chart : item),
+      } : song));
+    } catch (err) {
+      console.error('Failed to update chart:', err);
+      window.alert('Failed to update the chart. Please try again.');
+    } finally {
+      setSavingChartIdx(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -116,20 +233,30 @@ export default function SongManagementPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1.5">
-                        {song.chart.map((c, i) => (
-                          <span 
-                            key={i} 
-                            className="bg-black/30 border border-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-textMuted uppercase"
+                        {song.chart.map((c) => (
+                          <span
+                            key={c.idx}
+                            className="inline-flex items-center gap-1 bg-black/30 border border-white/10 pl-2 pr-1 py-0.5 rounded text-[10px] font-bold text-textMuted uppercase"
                             title={`${c.type} Level ${c.level}`}
                           >
                             {c.type.substring(0, 3)} {c.level}
+                            <button
+                              type="button"
+                              onClick={() => deleteChart(c.idx, `${c.type.toUpperCase()} Lv.${c.level}`)}
+                              disabled={deletingChartIdx === c.idx}
+                              className="p-0.5 rounded text-red-400 hover:bg-red-500/20 disabled:opacity-40 transition-colors"
+                              title="Delete Chart"
+                              aria-label={`Delete ${c.type} level ${c.level} chart`}
+                            >
+                              <Trash2 size={11} />
+                            </button>
                           </span>
                         ))}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 hover:bg-white/10 rounded-lg text-primary-400 transition-colors" title="Edit Song">
+                        <button onClick={() => openChartEditor(song)} className="p-2 hover:bg-white/10 rounded-lg text-primary-400 transition-colors" title="Edit Charts">
                           <Edit3 size={18} />
                         </button>
                         <button className="p-2 hover:bg-white/10 rounded-lg text-red-400 transition-colors" title="Delete Song (Not Implemented)">
@@ -170,6 +297,71 @@ export default function SongManagementPage() {
           </div>
         </div>
       </div>
+
+      {editingSong && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onMouseDown={() => setEditingSong(null)}>
+          <div className="glass-panel w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl" onMouseDown={event => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Edit Charts</h2>
+                <p className="text-sm text-textMuted">{editingSong.title} · Song #{editingSong.idx}</p>
+              </div>
+              <button onClick={() => setEditingSong(null)} className="p-2 rounded-lg text-textMuted hover:bg-white/10 hover:text-white" aria-label="Close editor">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-80px)] overflow-y-auto p-6 space-y-4">
+              {editingSong.chart.length === 0 ? (
+                <p className="py-12 text-center text-textMuted">No charts remain for this song.</p>
+              ) : editingSong.chart.map(chart => {
+                const draft = chartDrafts[chart.idx];
+                if (!draft) return null;
+                return (
+                  <section key={chart.idx} className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-bold text-white">Chart #{chart.idx}</h3>
+                      <div className="flex gap-2">
+                        <button onClick={() => saveChart(draft)} disabled={savingChartIdx === chart.idx} className="btn-primary flex items-center gap-2 text-sm">
+                          <Save size={15} /> {savingChartIdx === chart.idx ? 'Saving...' : 'Save'}
+                        </button>
+                        <button onClick={() => deleteChart(chart.idx, `${chart.type.toUpperCase()} Lv.${chart.level}`)} disabled={deletingChartIdx === chart.idx} className="flex items-center gap-2 rounded-lg border border-red-500/30 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 disabled:opacity-40">
+                          <Trash2 size={15} /> Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                      <label className="text-xs text-textMuted">Type
+                        <select value={draft.type} onChange={event => updateChartDraft(chart.idx, 'type', event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white">
+                          {['novice', 'advanced', 'exhaust', 'maximum', 'infinite', 'gravity', 'heavenly', 'vivid', 'ultimate'].map(type => <option key={type} value={type}>{type}</option>)}
+                        </select>
+                      </label>
+                      <label className="text-xs text-textMuted">Level
+                        <input type="number" step="0.1" value={draft.level} onChange={event => updateChartDraft(chart.idx, 'level', Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white" />
+                      </label>
+                      <label className="text-xs text-textMuted">Effector
+                        <input value={draft.effector ?? ''} onChange={event => updateChartDraft(chart.idx, 'effector', event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white" />
+                      </label>
+                      <label className="text-xs text-textMuted">Illustrator
+                        <input value={draft.illustrator ?? ''} onChange={event => updateChartDraft(chart.idx, 'illustrator', event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white" />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+                      {(Object.keys(draft.radar[0]) as (keyof RadarValues)[]).map(field => (
+                        <label key={field} className="text-xs capitalize text-textMuted">{field}
+                          <input type="number" step="0.1" value={draft.radar[0][field]} onChange={event => updateRadarDraft(chart.idx, field, Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white" />
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
