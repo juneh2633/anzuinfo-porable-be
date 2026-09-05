@@ -12,7 +12,7 @@ SOUND VOLTEX 플레이 데이터를 관리하는 NestJS 기반 REST API 서버�
 | 데이터베이스 | PostgreSQL 17 |
 | 캐시 | Redis 7 |
 | ORM | Prisma 6 |
-| 인프라 | Docker Compose, Jenkins |
+| 인프라 | Docker Compose, GitHub Actions |
 
 ---
 
@@ -35,7 +35,7 @@ SOUND VOLTEX 플레이 데이터를 관리하는 NestJS 기반 REST API 서버�
 ├── deploy.sh              # Linux 원커맨드 배포
 ├── deploy.ps1             # Windows 원커맨드 배포
 ├── docker-compose.yml
-└── Jenkinsfile
+└── .github/workflows/deploy.yml # GitHub Actions 자동 배포
 ```
 
 ---
@@ -121,18 +121,50 @@ chmod +x deploy.sh
 
 ---
 
-## Jenkins 자동 배포 설정 (최초 1회)
+## GitHub Actions 자동 배포 설정 (최초 1회)
 
-1. `docker compose up -d jenkins`
-2. `http://서버IP:8080` 접속
-3. 초기 비밀번호 확인:
-   ```bash
-   docker exec anzu-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-   ```
-4. **New Item → Pipeline → GitHub 저장소 연결 → Jenkinsfile 경로 지정**
-5. Jenkins Credentials에 `ADMIN_ID`, `ADMIN_PW` 등록 (캐시 초기화용)
+`main` 브랜치에 push하거나 Actions 화면에서 수동 실행하면 이미지 빌드 및 GHCR push,
+운영 서버 배포, 헬스체크, Prisma migration, 캐시 초기화가 순서대로 실행됩니다.
 
-이후 **git push** 시 자동으로 빌드 → 배포 → 마이그레이션 → 캐시 초기화가 실행됩니다.
+1. 운영 서버에 배포용 SSH 공개키를 `~/.ssh/authorized_keys`에 등록합니다.
+2. 저장소 **Settings → Environments → New environment**에서 `production` 환경을 만듭니다.
+3. `production` 환경의 **Environment secrets**에 다음 값을 등록합니다.
+
+   | 이름 | 값 |
+   |------|----|
+   | `PROD_HOST` | 운영 서버 IP 또는 도메인 |
+   | `PROD_SSH_USER` | SSH 사용자(예: `ubuntu`) |
+   | `PROD_SSH_PRIVATE_KEY` | 공개키와 짝인 OpenSSH 개인키 전체 내용 |
+   | `PROD_SSH_KNOWN_HOSTS` | 검증된 운영 서버의 known_hosts 한 줄 |
+
+4. 기본값 `/home/ubuntu/anzuinfo-porable-be`와 다른 경로를 쓸 경우 `production` 환경의
+   **Environment variables**에 `PROD_DEPLOY_DIR`를 등록합니다.
+5. 운영 서버의 해당 배포 경로에 `.env`를 미리 배치하고, SSH 사용자가 Docker를 실행할 수
+   있는지 확인합니다.
+6. 저장소 **Settings → Actions → General → Workflow permissions**에서 패키지를 push할 수
+   있도록 읽기/쓰기 권한을 허용합니다.
+
+`PROD_SSH_KNOWN_HOSTS`는 신뢰할 수 있는 경로에서 서버 지문을 확인한 뒤 생성해야 합니다.
+
+```bash
+ssh-keyscan -H 운영서버도메인
+```
+
+워크플로는 GitHub가 자동 발급하는 `GITHUB_TOKEN`을 사용하므로 별도 GHCR PAT은 필요하지
+않습니다. `production` 환경에 승인 규칙을 설정하면 실제 배포 전에 수동 승인을 받게 할 수도
+있습니다.
+
+기존 `anzu-info` GHCR 패키지가 저장소와 연결되어 있지 않다면 패키지의 **Package settings →
+Manage Actions access**에서 이 저장소에 쓰기 권한을 부여해야 합니다.
+
+### Jenkins 종료 순서
+
+1. Actions 탭에서 **Build and deploy → Run workflow**를 한 번 수동 실행합니다.
+2. 새 이미지로 교체됐는지, healthcheck와 migration 단계가 성공했는지 확인합니다.
+3. Jenkins job 또는 GitHub webhook을 비활성화해 중복 배포를 막습니다.
+4. Jenkins 서버를 중지한 뒤 며칠간 운영 상태를 확인하고 서버를 폐기합니다.
+
+첫 GitHub Actions 배포가 성공하기 전에는 Jenkins 서버를 내리지 않는 것을 권장합니다.
 
 ---
 
@@ -233,17 +265,16 @@ graph TD;
     NPM-->|HTTP/3000|App[anzu-info App]
     App-->|5432|DB[(PostgreSQL)]
     App-->|6379|Cache[(Redis)]
-    Jenkins[Jenkins CI/CD]-->|Deploy|App
+    Actions[GitHub Actions CI/CD]-->|Deploy|App
 ```
 
-> **아키텍처 참고자료**: 1GB RAM 서버 스펙의 제약으로 인해, 현재 자체 서버 내 배포(`npm ci`, `docker build` 등) 과정에서 순간적인 메모리 부족 및 성능 저하가 발생할 수 있습니다. 장기적으로는 외부 CI망에서 이미지를 빌드한 뒤 본 배포 서버에서는 `pull & up`만 수행하도록 빌드/배포 환경 분리 구조 개선을 고려하는 것이 안전합니다.
+> GitHub Actions에서 이미지를 빌드하므로 1GB RAM 운영 서버는 미리 빌드된 이미지를 `pull & up`만 합니다.
 
 ## 운영 및 유지보수 가이드
 
 ### 1. Swap 메모리 설정 (1GB RAM 필수)
 
-운영 서버(Production)와 젠킨스 빌드 서버(CI) 모두 OOM(Out Of Memory) 뻗음 현상을 방지하기 위해 호스트 OS(Ubuntu)에 **2GB의 Swap(가상) 메모리를 반드시 각각 세팅**해야 합니다. 
-(특히 새로운 CI 서버는 무거운 JVM 환경과 `docker build`를 동시에 견뎌야 하므로 매우 중요합니다.)
+1GB RAM 운영 서버의 OOM(Out Of Memory)을 방지하기 위해 호스트 OS(Ubuntu)에 **2GB의 Swap(가상) 메모리**를 설정하는 것을 권장합니다.
 
 ```bash
 # 2GB Swap 공간 생성 및 할당
@@ -262,7 +293,7 @@ echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
 
 ### 2. 정기적인 Docker 딥클린 (Cron 자동화)
 
-Jenkins 파이프라인의 `Docker Cleanup` 단계는 안전을 위해 사용하지 않는 "dangling" 이미지만 제거(`docker image prune -f`)합니다. 하지만 잦은 빌드로 인해 빌더 캐시나 더티 파일이 계속 쌓여 디스크를 차지할 수 있으므로, 주기적으로 호스트 서버에서 강력한 딥 클린을 수행하는 것이 좋습니다.
+GitHub Actions 배포 마지막 단계에서는 사용하지 않는 "dangling" 이미지만 제거(`docker image prune -f`)합니다. 하지만 잦은 배포로 이미지가 계속 쌓여 디스크를 차지할 수 있으므로, 주기적으로 호스트 서버에서 딥 클린을 수행하는 것이 좋습니다.
 
 ```bash
 sudo crontab -e
@@ -281,7 +312,7 @@ DB 관리가 필요할 때만 터미널에서 수동으로 스튜디오를 별�
 
 이번 아키텍처 개선으로, 운영 서버(CD)는 소스코드를 가지지 않으며 오로지 `docker-compose.yml`과 **`.env`** 만을 사용하여 미리 빌드된 이미지를 실행합니다. 
 따라서 운영 서버의 `/home/ubuntu/anzuinfo-porable-be` 경로에는 어드민 비밀번호 등이 담긴 `.env`를 수동으로 안전하게 배치해두어야 합니다. 
-**주의: `.env` 파일은 절대로 Github에 커밋되거나 Jenkins 서버에 업로드되어서는 안 됩니다.**
+**주의: `.env` 파일은 절대로 GitHub에 커밋하거나 Actions secret으로 통째로 복사하지 마세요.**
 
 ```bash
 # Prisma Studio 임시 구동

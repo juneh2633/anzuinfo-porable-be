@@ -28,9 +28,9 @@ if ($Build) {
     Write-Host "[1/5] 빌드 생략 (-Build 없음)" -ForegroundColor Gray
 }
 
-# ── 2. DB / Redis / Jenkins 먼저 기동 ────────────────────────
-Write-Host "[2/5] postgres, redis, jenkins 기동..." -ForegroundColor Yellow
-docker compose up -d postgres redis jenkins
+# ── 2. DB / Redis 먼저 기동 ──────────────────────────────────
+Write-Host "[2/5] postgres, redis 기동..." -ForegroundColor Yellow
+docker compose up -d postgres redis
 
 Write-Host "  postgres healthy 대기..." -ForegroundColor Gray
 $PgUser = if ($env:POSTGRES_USER) { $env:POSTGRES_USER } else { "postgres" }
@@ -75,5 +75,4 @@ Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
 Write-Host "  배포 완료!" -ForegroundColor Green
 Write-Host "  App     -> http://localhost:3000" -ForegroundColor Green
-Write-Host "  Jenkins -> http://localhost:8080" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green

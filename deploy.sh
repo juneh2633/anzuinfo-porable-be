@@ -50,7 +50,7 @@ fi
 
 # ── 2. DB / Redis 먼저 기동 ───────────────────────────────────
 echo "🚀 [2/5] postgres, redis 기동..."
-docker compose up -d postgres redis jenkins
+docker compose up -d postgres redis
 
 echo "⏳  postgres healthy 대기..."
 until docker exec anzu-postgres pg_isready -U "postgres" -d "postgres" > /dev/null 2>&1; do
@@ -107,5 +107,4 @@ echo ""
 echo "=========================================="
 echo "  ✅  배포 완료!"
 echo "  App  → http://localhost:3000"
-echo "  Jenkins → http://localhost:8080"
 echo "=========================================="
