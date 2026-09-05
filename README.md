@@ -132,10 +132,10 @@ chmod +x deploy.sh
 
    | 이름 | 값 |
    |------|----|
-   | `PROD_HOST` | 운영 서버 IP 또는 도메인 |
-   | `PROD_SSH_USER` | SSH 사용자(예: `ubuntu`) |
-   | `PROD_SSH_PRIVATE_KEY` | 공개키와 짝인 OpenSSH 개인키 전체 내용 |
-   | `PROD_SSH_KNOWN_HOSTS` | 검증된 운영 서버의 known_hosts 한 줄 |
+   | `SSH_HOST` | 운영 서버 IP 또는 도메인 |
+   | `SSH_USER` | SSH 사용자(예: `ubuntu`) |
+   | `SSH_KEY` | 공개키와 짝인 OpenSSH 개인키 전체 내용 |
+   | `SSH_KNOWN_HOSTS` | 검증된 운영 서버의 known_hosts 한 줄(권장) |
 
 4. 기본값 `/home/ubuntu/anzuinfo-porable-be`와 다른 경로를 쓸 경우 `production` 환경의
    **Environment variables**에 `PROD_DEPLOY_DIR`를 등록합니다.
@@ -144,7 +144,8 @@ chmod +x deploy.sh
 6. 저장소 **Settings → Actions → General → Workflow permissions**에서 패키지를 push할 수
    있도록 읽기/쓰기 권한을 허용합니다.
 
-`PROD_SSH_KNOWN_HOSTS`는 신뢰할 수 있는 경로에서 서버 지문을 확인한 뒤 생성해야 합니다.
+`SSH_KNOWN_HOSTS`는 신뢰할 수 있는 경로에서 서버 지문을 확인한 뒤 생성해야 합니다. 등록하지
+않으면 첫 연결 시 `ssh-keyscan`으로 자동 생성합니다.
 
 ```bash
 ssh-keyscan -H 운영서버도메인

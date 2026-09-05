@@ -52,13 +52,18 @@ jobs:
 
       - name: Configure SSH
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          PROD_HOST: ${{ secrets.SSH_HOST }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$PROD_HOST" > ~/.ssh/known_hosts
+          fi
           chmod 600 ~/.ssh/known_hosts
           cat > ~/.ssh/config <<'EOF'
           Host *
@@ -72,8 +77,8 @@ jobs:
 
       - name: Sync deployment files
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_HOST: ${{ secrets.SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           ssh "$PROD_SSH_USER@$PROD_HOST" "mkdir -p '$DEPLOY_DIR'"
           scp docker-compose.yml "$PROD_SSH_USER@$PROD_HOST:$DEPLOY_DIR/docker-compose.yml"
@@ -81,8 +86,8 @@ jobs:
 
       - name: Log in to GHCR on production server
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_HOST: ${{ secrets.SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.SSH_USER }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           printf '%s' "$GHCR_TOKEN" | ssh "$PROD_SSH_USER@$PROD_HOST" \
@@ -90,8 +95,8 @@ jobs:
 
       - name: Deploy and migrate
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_HOST: ${{ secrets.SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           ssh "$PROD_SSH_USER@$PROD_HOST" "DEPLOY_DIR='$DEPLOY_DIR' IMAGE_TAG='$IMAGE_TAG' bash -s" <<'REMOTE'
             set -euo pipefail
