@@ -15,7 +15,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/juneh2633/anzu-info
+  IMAGE_NAME: ghcr.io/juneh2633/anzuinfo-porable-be
   IMAGE_TAG: ${{ github.sha }}
   DEPLOY_DIR: ${{ vars.PROD_DEPLOY_DIR || '/home/ubuntu/anzuinfo-porable-be' }}
 
@@ -97,7 +97,7 @@ jobs:
             set -euo pipefail
             cd "$DEPLOY_DIR"
 
-            docker pull "ghcr.io/juneh2633/anzu-info:$IMAGE_TAG"
+            docker pull "ghcr.io/juneh2633/anzuinfo-porable-be:$IMAGE_TAG"
             IMAGE_TAG="$IMAGE_TAG" docker compose -p anzuinfo-porable-be up \
               -d --no-deps --force-recreate --remove-orphans app
 

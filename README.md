@@ -154,8 +154,7 @@ ssh-keyscan -H 운영서버도메인
 않습니다. `production` 환경에 승인 규칙을 설정하면 실제 배포 전에 수동 승인을 받게 할 수도
 있습니다.
 
-기존 `anzu-info` GHCR 패키지가 저장소와 연결되어 있지 않다면 패키지의 **Package settings →
-Manage Actions access**에서 이 저장소에 쓰기 권한을 부여해야 합니다.
+이미지는 이 저장소에 연결되는 `ghcr.io/juneh2633/anzuinfo-porable-be` 패키지로 배포됩니다.
 
 ### Jenkins 종료 순서
 
