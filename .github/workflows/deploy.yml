@@ -56,6 +56,7 @@ jobs:
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
           PROD_HOST: ${{ secrets.SSH_HOST }}
         run: |
+          PROD_HOST="$(printf '%s' "$PROD_HOST" | tr -d '[:space:]')"
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
@@ -82,6 +83,8 @@ jobs:
           PROD_HOST: ${{ secrets.SSH_HOST }}
           PROD_SSH_USER: ${{ secrets.SSH_USER }}
         run: |
+          PROD_HOST="$(printf '%s' "$PROD_HOST" | tr -d '[:space:]')"
+          PROD_SSH_USER="$(printf '%s' "$PROD_SSH_USER" | tr -d '[:space:]')"
           ssh "$PROD_SSH_USER@$PROD_HOST" "mkdir -p '$DEPLOY_DIR'"
           scp docker-compose.yml "$PROD_SSH_USER@$PROD_HOST:$DEPLOY_DIR/docker-compose.yml"
           scp -r docker "$PROD_SSH_USER@$PROD_HOST:$DEPLOY_DIR/"
@@ -92,6 +95,8 @@ jobs:
           PROD_SSH_USER: ${{ secrets.SSH_USER }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          PROD_HOST="$(printf '%s' "$PROD_HOST" | tr -d '[:space:]')"
+          PROD_SSH_USER="$(printf '%s' "$PROD_SSH_USER" | tr -d '[:space:]')"
           printf '%s' "$GHCR_TOKEN" | ssh "$PROD_SSH_USER@$PROD_HOST" \
             "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
 
@@ -100,6 +105,8 @@ jobs:
           PROD_HOST: ${{ secrets.SSH_HOST }}
           PROD_SSH_USER: ${{ secrets.SSH_USER }}
         run: |
+          PROD_HOST="$(printf '%s' "$PROD_HOST" | tr -d '[:space:]')"
+          PROD_SSH_USER="$(printf '%s' "$PROD_SSH_USER" | tr -d '[:space:]')"
           ssh "$PROD_SSH_USER@$PROD_HOST" "DEPLOY_DIR='$DEPLOY_DIR' IMAGE_TAG='$IMAGE_TAG' bash -s" <<'REMOTE'
             set -euo pipefail
             cd "$DEPLOY_DIR"
