@@ -61,17 +61,19 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           if [ -n "$SSH_KNOWN_HOSTS" ]; then
             printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            strict_host_key_checking=yes
           else
-            ssh-keyscan -H "$PROD_HOST" > ~/.ssh/known_hosts
+            touch ~/.ssh/known_hosts
+            strict_host_key_checking=accept-new
           fi
           chmod 600 ~/.ssh/known_hosts
-          cat > ~/.ssh/config <<'EOF'
+          cat > ~/.ssh/config <<EOF
           Host *
             BatchMode yes
             ConnectTimeout 15
             ServerAliveInterval 15
             ServerAliveCountMax 4
-            StrictHostKeyChecking yes
+            StrictHostKeyChecking $strict_host_key_checking
           EOF
           chmod 600 ~/.ssh/config
 

@@ -145,7 +145,7 @@ chmod +x deploy.sh
    있도록 읽기/쓰기 권한을 허용합니다.
 
 `SSH_KNOWN_HOSTS`는 신뢰할 수 있는 경로에서 서버 지문을 확인한 뒤 생성해야 합니다. 등록하지
-않으면 첫 연결 시 `ssh-keyscan`으로 자동 생성합니다.
+않으면 첫 SSH 연결에서 서버 키를 수락합니다.
 
 ```bash
 ssh-keyscan -H 운영서버도메인
